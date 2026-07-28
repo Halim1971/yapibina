@@ -177,3 +177,117 @@ td {
     flex-direction: column;
   }
 }
+
+.muted {
+  color: #526767;
+}
+
+.period-filter {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.summary-grid article {
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+}
+
+.summary-grid strong {
+  font-size: 1.2rem;
+}
+
+.create-dues,
+.cancel-form {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.6rem;
+}
+
+.create-dues summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.dues-row,
+.movement-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr repeat(4, 1fr) 0.8fr;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-secondary);
+}
+
+.movement-row {
+  grid-template-columns: 0.9fr 2fr repeat(3, 1fr);
+}
+
+.dues-head,
+.movement-head {
+  font-weight: 700;
+}
+
+.dues-status {
+  display: inline-block;
+  padding: 0.25rem 0.55rem;
+  border-radius: 1rem;
+}
+
+.status-paid {
+  background: #e1f1e7;
+}
+
+.status-partial {
+  background: #fff2cf;
+}
+
+.status-due {
+  background: #f8dddd;
+}
+
+.status-not-created {
+  background: var(--color-surface);
+}
+
+@media (max-width: 48rem) {
+  .period-filter,
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dues-head,
+  .movement-head {
+    display: none;
+  }
+
+  .dues-row,
+  .movement-row {
+    grid-template-columns: 1fr 1fr;
+    padding: 1rem;
+    margin: 0.75rem 0;
+    border: 1px solid var(--color-secondary);
+    border-radius: 0.6rem;
+  }
+
+  .dues-row span::before,
+  .movement-row span::before {
+    display: block;
+    content: attr(data-label);
+    color: #526767;
+    font-size: 0.8rem;
+  }
+}

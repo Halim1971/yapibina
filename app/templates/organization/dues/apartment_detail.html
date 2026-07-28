@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Daire detayı{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide dues-page">
+  <header class="section-header">
+    <div>
+      <h1>Daire detayı: {{ detail.apartment.unit_code or detail.apartment.number }}</h1>
+      <a href="{{ url_for('organization.dues', building_id=detail.apartment.building_id) }}">Aidat ekranına dön</a>
+    </div>
+  </header>
+
+  <div class="summary-grid">
+    <article><span>Toplam borç</span><strong>{{ "%.2f"|format(detail.balance.total_charges) }} ₺</strong></article>
+    <article><span>Toplam ödeme</span><strong>{{ "%.2f"|format(detail.balance.total_payments) }} ₺</strong></article>
+    <article><span>Açık borç</span><strong>{{ "%.2f"|format(detail.balance.total_outstanding) }} ₺</strong></article>
+    <article><span>Tahsis edilmemiş ödeme</span><strong>{{ "%.2f"|format(detail.unallocated_amount) }} ₺</strong></article>
+  </div>
+
+  <details class="create-dues" open>
+    <summary>Ödeme gir</summary>
+    <form method="post" action="{{ url_for('organization.dues_payment_create', apartment_id=detail.apartment.id) }}" class="management-form">
+      {{ payment_form.hidden_tag() }}
+      <div class="field">{{ payment_form.amount.label }}{{ payment_form.amount }}</div>
+      <div class="field">{{ payment_form.payment_date.label }}{{ payment_form.payment_date }}</div>
+      <div class="field">{{ payment_form.payment_method.label }}{{ payment_form.payment_method }}</div>
+      <div class="field">{{ payment_form.reference.label }}{{ payment_form.reference }}</div>
+      <div class="field">{{ payment_form.description.label }}{{ payment_form.description }}</div>
+      <div class="checkbox">{{ payment_form.auto_allocate }}{{ payment_form.auto_allocate.label }}</div>
+      <button class="button" type="submit">Ödemeyi kaydet</button>
+      <p class="muted">Ödeme en eski açık borçtan başlayarak işlenir. Girilen tutarın tamamı seçili aya yansımayabilir.</p>
+    </form>
+  </details>
+
+  <h2>Hareketler</h2>
+  <div class="movement-list">
+    <div class="movement-row movement-head"><span>Tarih</span><span>Açıklama</span><span>Borç</span><span>Ödeme</span><span>Kalan</span></div>
+    {% for movement in detail.movements %}
+      <div class="movement-row">
+        <span data-label="Tarih">{{ movement.occurred_on.strftime("%d.%m.%Y") }}</span>
+        <span data-label="Açıklama">{{ movement.description }}</span>
+        <span data-label="Borç">{{ "%.2f"|format(movement.debt_amount) }} ₺</span>
+        <span data-label="Ödeme">{{ "%.2f"|format(movement.payment_amount) }} ₺</span>
+        <span data-label="Kalan">{{ "%.2f"|format(movement.running_balance) }} ₺</span>
+      </div>
+    {% else %}
+      <p>Henüz finansal hareket bulunmuyor.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

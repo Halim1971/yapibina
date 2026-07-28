@@ -28,3 +28,6 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Atomik aidat posting, manuel borç, ödeme, allocation ve oldest-first otomatik mahsup servisleri
 - Finansal reversal/immutability, tenant scope ve sorgudan hesaplanan bakiye kuralları
 - Aidat ve ödeme çekirdeği için Alembic migration'ı
+- Organization admin için bina/dönem filtreli aidat takip ekranı
+- Aktif dairelere tek akışta toplu aidat oluşturma ve PRG tabanlı ödeme girişi
+- Seçili dönem allocation'larından hesaplanan tahsilat ve sade daire finans detayı

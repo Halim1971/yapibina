@@ -4,7 +4,7 @@
   </nav>
 {% endmacro %}
 {% macro organization_nav() %}
-  <nav class="nav"><a href="{{ url_for('organization.buildings') }}">Binalar</a><a href="{{ url_for('organization.users') }}">Kullanıcılar</a>
+  <nav class="nav"><a href="{{ url_for('organization.buildings') }}">Binalar</a><a href="{{ url_for('organization.users') }}">Kişiler</a><a href="{{ url_for('organization.dues') }}">Aidatlar</a>
     <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}

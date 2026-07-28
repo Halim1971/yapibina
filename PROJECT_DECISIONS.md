@@ -391,6 +391,32 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Ölçülen sorgu hacmi doğruluk kontrollü
   cache gerektirirse.
 
+## D-047 — Aidat ekranı dönem tahsilatını allocation bazında gösterir
+
+- **Karar:** Organization admin aidat ekranındaki tahsilat, yalnız seçilen
+  yıl/aya ait posted borçlara bağlı geçerli ödeme dağıtımlarının toplamıdır.
+- **Gerekçe:** Ödeme en eski açık borçtan başladığında önceki ayı kapatan
+  tutarın yanlışlıkla seçili ay tahsilatı olarak sunulmasını önlemek.
+- **MVP kapsamı:** Aktif bina/dönem seçimi, toplu aidat oluşturma, daire
+  durumları, PRG tabanlı ödeme girişi ve sade finans detayı.
+- **Sonraya bırakılan alternatif:** Döneme özel manuel mahsup seçimi, gelişmiş
+  raporlar ve resident görünümü.
+- **Yeniden değerlendirme koşulu:** Kullanıcıların otomatik mahsup sırasını
+  değiştirmesi veya raporlanabilir mahsup düzeltmesi gerekirse.
+
+## D-048 — Ödeme allocation sırasında satır kilidi kullanır
+
+- **Karar:** PostgreSQL'de payment ve açık charge sorguları transaction içinde
+  `SELECT FOR UPDATE` ile kilitlenir; SQLite test ortamında desteklenen doğal
+  fallback kullanılır.
+- **Gerekçe:** Paralel ödeme dağıtımlarının payment veya charge limitini aşma
+  riskini azaltmak ve payment/allocation işlemini atomik tutmak.
+- **MVP kapsamı:** Tek uygulama transaction'ında ödeme kaydı, oldest-first
+  allocation, rollback ve POST/Redirect/GET akışı.
+- **Sonraya bırakılan alternatif:** Dağıtık kilit veya ayrı allocation kuyruğu.
+- **Yeniden değerlendirme koşulu:** Yük testi yüksek contention ya da birden
+  fazla yazma kaynağı gösterirse.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

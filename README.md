@@ -106,9 +106,9 @@ flask --app wsgi:app db migrate -m "açıklayıcı migration mesajı"
 Migration production'a uygulanmadan önce PostgreSQL üzerinde ayrıca
 incelenmeli ve staging ortamında denenmelidir.
 
-## Aidat ve ödeme çekirdeği
+## Aidat ve ödeme
 
-Bu aşamada kullanıcı ekranı olmadan yalnız backend finansal temeli bulunur:
+Finansal temel ve organization admin için sade aidat takip ekranı bulunur:
 
 - `ChargeBatch`, bir binanın belirli dönem aidatlarını aktif dairelere atomik
   olarak post eder.
@@ -121,6 +121,16 @@ Bu aşamada kullanıcı ekranı olmadan yalnız backend finansal temeli bulunur:
   reversal ile kapatılır.
 
 Bu yapı genel muhasebe veya çift taraflı ledger değildir.
+
+Organization admin, tenant hostname üzerinde `/organization/dues` adresinden
+aktif binayı ve dönemi seçebilir; tüm aktif dairelere eşit tutarlı aidat
+oluşturabilir, dönem tahakkuk/tahsilat/kalan özetini görebilir ve daireye ödeme
+girebilir. Otomatik mahsup en eski açık borçtan başlar. Bu nedenle ekranda
+seçili dönemin tahsilatı, yalnız o dönemin borçlarına gerçekten dağıtılmış
+ödeme tutarıdır; girilen ödemenin tamamı seçili aya yansımayabilir.
+
+Arayüzde teknik model adları yerine aidat, borç, ödeme ve kalan dili kullanılır.
+Resident finans ekranı henüz bulunmaz.
 
 ## Kalite kontrolleri
 
@@ -169,8 +179,7 @@ migrations/         Alembic migration ortamı ve ilk tenant şeması
 ## Henüz bulunmayan özellikler
 
 Bu aşamada banka hareketi, gider, belge, duyuru, audit, notification ve
-subscription modelleri yoktur. Aidat/ödeme için route veya kullanıcı ekranı
-da bulunmaz. Kayıt, parola
+subscription modelleri yoktur. Kayıt, parola
 sıfırlama, e-posta daveti/doğrulaması, MFA, resident dashboard ekranları,
 dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
 Docker ve background job altyapısı oluşturulmamıştır.

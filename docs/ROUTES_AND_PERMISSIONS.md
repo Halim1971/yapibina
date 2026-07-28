@@ -224,7 +224,18 @@ Tenant hostname üzerinde `organization_admin_required` ile:
 - `/organization/users` ve kullanıcı/organization membership oluşturma
 - Organization, building ve apartment membership POST işlemleri
 - Membership fiziksel silme yerine POST ile pasifleştirme
+- `GET /organization/dues` ile aktif bina ve dönem bazlı aidat özeti
+- `POST /organization/dues/batches` ile aktif dairelere toplu aidat oluşturma
+- `GET /organization/dues/apartments/<apartment_id>` ile scoped daire finans detayı
+- `POST /organization/dues/apartments/<apartment_id>/payments` ile ödeme ve
+  isteğe bağlı en eski borçtan başlayan otomatik mahsup
 
 Tenant dışı detay ve mutation hedefleri 404 verir. Aynı tenant içinde rol
 yetersizliği 403 verir. State değiştiren endpoint'ler GET kabul etmez ve CSRF
 korumasındadır.
+
+Aidat ekranındaki tahsilat yalnız seçili dönem borçlarına bağlı geçerli ödeme
+dağıtımlarından hesaplanır. Önceki dönem borcu varsa otomatik mahsup önce o
+borca gider ve ödeme tutarının tamamı seçili dönem tahsilatı gibi gösterilmez.
+Arayüz teknik finans model adlarını göstermez. Resident finans rotaları, gider
+ve banka modülleri henüz uygulanmamıştır.

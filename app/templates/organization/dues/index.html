@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Aidatlar{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide dues-page">
+  <header class="section-header">
+    <div>
+      <h1>Aidatlar</h1>
+      <p class="muted">Bina ve dönem bazında aidat durumunu takip edin.</p>
+    </div>
+  </header>
+
+  <form method="get" class="period-filter">
+    <div class="field">{{ period_form.building_id.label }}{{ period_form.building_id }}</div>
+    <div class="field">{{ period_form.month.label }}{{ period_form.month }}</div>
+    <div class="field">{{ period_form.year.label }}{{ period_form.year }}</div>
+    <button type="submit">Göster</button>
+  </form>
+
+  {% if dashboard.building %}
+    <div class="summary-grid">
+      <article><span>Toplam tahakkuk</span><strong>{{ "%.2f"|format(dashboard.total_charges) }} ₺</strong></article>
+      <article><span>Tahsil edilen</span><strong>{{ "%.2f"|format(dashboard.total_collected) }} ₺</strong></article>
+      <article><span>Kalan</span><strong>{{ "%.2f"|format(dashboard.total_outstanding) }} ₺</strong></article>
+      <article><span>Daire durumu</span><strong>{{ dashboard.fully_paid_count }} ödendi · {{ dashboard.partially_paid_count }} kısmi · {{ dashboard.debtor_count }} borçlu</strong></article>
+    </div>
+
+    {% if not dashboard.batch %}
+      <details class="create-dues" open>
+        <summary>Aidat oluştur</summary>
+        <form method="post" action="{{ url_for('organization.dues_batch_create') }}" class="management-form">
+          {{ batch_form.csrf_token }}
+          <input type="hidden" name="building_id" value="{{ batch_form.building_id.data }}">
+          <input type="hidden" name="period_year" value="{{ batch_form.period_year.data }}">
+          <input type="hidden" name="period_month" value="{{ batch_form.period_month.data }}">
+          <div class="field">{{ batch_form.title.label }}{{ batch_form.title }}</div>
+          <div class="field">{{ batch_form.default_amount.label }}{{ batch_form.default_amount }}</div>
+          <div class="field">{{ batch_form.due_date.label }}{{ batch_form.due_date }}</div>
+          <div class="field">{{ batch_form.description.label }}{{ batch_form.description }}</div>
+          <button class="button" type="submit">Tüm aktif dairelere uygula</button>
+        </form>
+      </details>
+    {% else %}
+      <form method="post" action="{{ url_for('organization.dues_batch_cancel', batch_id=dashboard.batch.id) }}" class="cancel-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input name="reason" required maxlength="500" placeholder="İptal nedeni">
+        <button type="submit">İptal et</button>
+      </form>
+    {% endif %}
+
+    <div class="dues-table" role="table" aria-label="Daire aidat durumu">
+      <div class="dues-row dues-head" role="row">
+        <span>Daire</span><span>Kat / Blok</span><span>Borç</span>
+        <span>Ödenen</span><span>Kalan</span><span>Durum</span><span>İşlem</span>
+      </div>
+      {% for row in dashboard.rows %}
+        <div class="dues-row" role="row">
+          <a href="{{ url_for('organization.dues_apartment_detail', apartment_id=row.apartment_id) }}">{{ row.apartment_label }}</a>
+          <span data-label="Kat / Blok">{{ row.floor_label }}</span>
+          <span data-label="Borç">{{ "%.2f"|format(row.charge_amount) }} ₺</span>
+          <span data-label="Ödenen">{{ "%.2f"|format(row.paid_amount) }} ₺</span>
+          <span data-label="Kalan">{{ "%.2f"|format(row.outstanding_amount) }} ₺</span>
+          <span data-label="Durum"><span class="dues-status status-{{ row.status_code }}">{{ row.status_label }}</span></span>
+          <a class="row-action" href="{{ url_for('organization.dues_apartment_detail', apartment_id=row.apartment_id) }}">Ödeme gir</a>
+        </div>
+      {% else %}
+        <p>Bu binada aktif daire bulunmuyor.</p>
+      {% endfor %}
+    </div>
+    <p class="muted">{{ dashboard.apartment_count }} aktif daire · {{ dashboard.charged_count }} daire için aidat oluşturuldu.</p>
+  {% else %}
+    <p>Aktif bina bulunmuyor. Önce bina oluşturun veya bir binayı aktif hale getirin.</p>
+  {% endif %}
+</section>
+{% endblock %}

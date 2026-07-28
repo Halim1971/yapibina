@@ -89,13 +89,36 @@ def _scoped_payment(
     return payment
 
 
+def _lock_payment(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    payment_id: uuid.UUID,
+) -> Payment:
+    payment = session.scalar(
+        select(Payment)
+        .where(
+            Payment.id == payment_id,
+            Payment.organization_id == organization_id,
+        )
+        .with_for_update()
+    )
+    if payment is None:
+        raise EntityNotFoundError("Ödeme bulunamadı.")
+    return payment
+
+
 def get_payment_unallocated_amount(
     session: SessionLike,
     *,
     organization_id: uuid.UUID,
     payment_id: uuid.UUID,
 ) -> Decimal:
-    payment = _scoped_payment(session, organization_id, payment_id)
+    payment = _lock_payment(
+        session,
+        organization_id=organization_id,
+        payment_id=payment_id,
+    )
     if payment.status is not PaymentStatus.POSTED:
         return Decimal("0.00")
     allocated = session.scalar(
@@ -118,10 +141,12 @@ def allocate_payment(
 ) -> PaymentAllocation:
     payment = _scoped_payment(session, organization_id, payment_id)
     charge = session.scalar(
-        select(Charge).where(
+        select(Charge)
+        .where(
             Charge.id == charge_id,
             Charge.organization_id == organization_id,
         )
+        .with_for_update()
     )
     if charge is None:
         raise EntityNotFoundError("Borç kaydı bulunamadı.")
@@ -185,7 +210,11 @@ def auto_allocate_payment(
     organization_id: uuid.UUID,
     payment_id: uuid.UUID,
 ) -> list[PaymentAllocation]:
-    payment = _scoped_payment(session, organization_id, payment_id)
+    payment = _lock_payment(
+        session,
+        organization_id=organization_id,
+        payment_id=payment_id,
+    )
     if payment.status is not PaymentStatus.POSTED:
         raise InvalidFinancialStateTransitionError(
             "Reversed ödeme allocate edilemez."
@@ -198,6 +227,7 @@ def auto_allocate_payment(
             Charge.status == ChargeStatus.POSTED,
         )
         .order_by(Charge.due_date, Charge.created_at, Charge.id)
+        .with_for_update()
     ).all()
     allocations: list[PaymentAllocation] = []
     with session.begin_nested():

@@ -1,13 +1,44 @@
+from datetime import date
+
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, EmailField, PasswordField, SelectField, StringField
-from wtforms.fields import DateTimeLocalField
-from wtforms.validators import Email, InputRequired, Length, Optional
+from wtforms import (
+    BooleanField,
+    DecimalField,
+    EmailField,
+    PasswordField,
+    SelectField,
+    StringField,
+    TextAreaField,
+)
+from wtforms.fields import DateField, DateTimeLocalField
+from wtforms.validators import (
+    Email,
+    InputRequired,
+    Length,
+    NumberRange,
+    Optional,
+)
 
 from app.models import (
     ApartmentMembershipRole,
     BuildingMembershipRole,
     OrganizationMembershipRole,
 )
+
+MONTH_CHOICES = [
+    (1, "Ocak"),
+    (2, "Şubat"),
+    (3, "Mart"),
+    (4, "Nisan"),
+    (5, "Mayıs"),
+    (6, "Haziran"),
+    (7, "Temmuz"),
+    (8, "Ağustos"),
+    (9, "Eylül"),
+    (10, "Ekim"),
+    (11, "Kasım"),
+    (12, "Aralık"),
+]
 
 
 class BuildingForm(FlaskForm):  # type: ignore[misc]
@@ -56,3 +87,88 @@ class MembershipForm(FlaskForm):  # type: ignore[misc]
 
     def set_apartment_roles(self) -> None:
         self.role.choices = [(item.value, item.value) for item in ApartmentMembershipRole]
+
+
+class DuesPeriodFilterForm(FlaskForm):  # type: ignore[misc]
+    class Meta:
+        csrf = False
+
+    building_id = SelectField("Bina", validators=[InputRequired()])
+    year = SelectField("Yıl", coerce=int, validators=[InputRequired()])
+    month = SelectField(
+        "Ay",
+        coerce=int,
+        choices=MONTH_CHOICES,
+        validators=[InputRequired()],
+    )
+
+    def set_choices(self, buildings: list[tuple[str, str]], current_year: int) -> None:
+        self.building_id.choices = buildings
+        self.year.choices = [
+            (year, str(year)) for year in range(current_year - 5, current_year + 6)
+        ]
+
+
+class ChargeBatchCreateForm(FlaskForm):  # type: ignore[misc]
+    building_id = SelectField("Bina", validators=[InputRequired()])
+    period_year = SelectField("Yıl", coerce=int, validators=[InputRequired()])
+    period_month = SelectField(
+        "Ay",
+        coerce=int,
+        choices=MONTH_CHOICES,
+        validators=[InputRequired()],
+    )
+    title = StringField("Aidat başlığı", validators=[InputRequired(), Length(max=160)])
+    default_amount = DecimalField(
+        "Aidat tutarı",
+        places=2,
+        rounding=None,
+        validators=[InputRequired(), NumberRange(min=0.01)],
+    )
+    due_date = DateField("Son ödeme tarihi", validators=[InputRequired()])
+    description = TextAreaField(
+        "Açıklama",
+        validators=[Optional(), Length(max=500)],
+    )
+
+    def set_choices(self, buildings: list[tuple[str, str]], current_year: int) -> None:
+        self.building_id.choices = buildings
+        self.period_year.choices = [
+            (year, str(year)) for year in range(current_year - 5, current_year + 6)
+        ]
+
+
+class PaymentCreateForm(FlaskForm):  # type: ignore[misc]
+    amount = DecimalField(
+        "Tutar",
+        places=2,
+        rounding=None,
+        validators=[InputRequired(), NumberRange(min=0.01)],
+    )
+    payment_date = DateField(
+        "Ödeme tarihi",
+        validators=[InputRequired()],
+        default=date.today,
+    )
+    payment_method = SelectField(
+        "Ödeme yöntemi",
+        choices=[
+            ("cash", "Nakit"),
+            ("bank_transfer", "Havale/EFT"),
+            ("card", "Kart"),
+            ("other", "Diğer"),
+        ],
+        validators=[InputRequired()],
+    )
+    reference = StringField(
+        "Referans",
+        validators=[Optional(), Length(max=120)],
+    )
+    description = TextAreaField(
+        "Açıklama",
+        validators=[Optional(), Length(max=500)],
+    )
+    auto_allocate = BooleanField(
+        "Ödemeyi en eski açık borçtan başlayarak işle",
+        default=True,
+    )
