@@ -206,3 +206,25 @@ Resident yalnız aktif apartment membership ile eriştiği binadaki `residents` 
 - Nested URL'de parent-child eşleşmesi doğrulanmazsa IDOR oluşur.
 - Merkezi platform hostunda tenant route'larının açılması güvenlik ve marka karışıklığı yaratır.
 - Platform destek erişiminin sınırsız bırakılması iç tehdit riskini yükseltir.
+
+## 14. Uygulanan yönetim route'ları
+
+Platform hostname üzerinde `platform_admin_required` ile:
+
+- `/platform/organizations` liste, arama ve sayfalama
+- `/platform/organizations/new` ve `/<organization_id>/edit`
+- `/<organization_id>/branding`
+- `/<organization_id>/domains` ile domain ekleme, primary, activate ve suspend
+- `/<organization_id>/admins` ile mevcut/yeni kullanıcıyı admin atama
+
+Tenant hostname üzerinde `organization_admin_required` ile:
+
+- `/organization/buildings` ve bina oluşturma/düzenleme
+- Bina altında daire listeleme/oluşturma ve scoped daire düzenleme
+- `/organization/users` ve kullanıcı/organization membership oluşturma
+- Organization, building ve apartment membership POST işlemleri
+- Membership fiziksel silme yerine POST ile pasifleştirme
+
+Tenant dışı detay ve mutation hedefleri 404 verir. Aynı tenant içinde rol
+yetersizliği 403 verir. State değiştiren endpoint'ler GET kabul etmez ve CSRF
+korumasındadır.

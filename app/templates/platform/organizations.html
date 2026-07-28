@@ -1,0 +1,6 @@
+{% extends "base.html" %}{% from "components/nav.html" import platform_nav %}
+{% block title %}Organizations{% endblock %}{% block navigation %}{{ platform_nav() }}{% endblock %}
+{% block content %}<section class="panel wide"><header class="section-header"><h1>Organizations</h1><a class="button-link" href="{{ url_for('platform.organization_new') }}">Yeni</a></header>
+<form method="get" class="search"><input name="q" value="{{ search }}" aria-label="Ara"><button type="submit">Ara</button></form>
+{% if pagination.items %}<table><thead><tr><th>Ad</th><th>Slug</th><th>Durum</th></tr></thead><tbody>{% for item in pagination.items %}<tr><td><a href="{{ url_for('platform.organization_detail', organization_id=item.id) }}">{{ item.name }}</a></td><td>{{ item.slug }}</td><td><span class="badge">{{ item.status.value }}</span></td></tr>{% endfor %}</tbody></table>{% else %}<p>Organization bulunamadı.</p>{% endif %}
+<div class="pagination">{% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}&q={{ search }}">Önceki</a>{% endif %}<span>{{ pagination.page }}/{{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a href="?page={{ pagination.next_num }}&q={{ search }}">Sonraki</a>{% endif %}</div></section>{% endblock %}

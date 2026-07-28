@@ -55,6 +55,7 @@ class BaseConfig:
     DEFAULT_CURRENCY = os.getenv("DEFAULT_CURRENCY", "TRY")
     PLATFORM_HOSTNAME = os.getenv("PLATFORM_HOSTNAME", "platform.yapibina.com")
     BASE_TENANT_DOMAIN = os.getenv("BASE_TENANT_DOMAIN", "yapibina.com")
+    MANAGEMENT_PAGE_SIZE = _environment_int("MANAGEMENT_PAGE_SIZE", 20)
 
     WEAK_SECRET_KEYS: ClassVar[frozenset[str]] = frozenset(
         {
@@ -104,9 +105,7 @@ class ProductionConfig(BaseConfig):
     def validate(cls, config: Mapping[str, Any]) -> None:
         secret_key = config.get("SECRET_KEY")
         if not isinstance(secret_key, str) or secret_key in cls.WEAK_SECRET_KEYS:
-            raise RuntimeError(
-                "Production requires a strong, non-default SECRET_KEY."
-            )
+            raise RuntimeError("Production requires a strong, non-default SECRET_KEY.")
         if len(secret_key) < 32:
             raise RuntimeError("Production SECRET_KEY must be at least 32 characters.")
         if not config.get("SESSION_COOKIE_SECURE"):

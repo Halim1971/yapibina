@@ -1,0 +1,14 @@
+{% macro render_form(form, submit_label="Kaydet") %}
+  <form method="post" class="management-form">
+    {{ form.hidden_tag() }}
+    {% for error in form.form_errors %}<p class="alert">{{ error }}</p>{% endfor %}
+    {% for field in form if field.type not in ("CSRFTokenField", "HiddenField", "SubmitField") %}
+      <div class="{% if field.type == 'BooleanField' %}checkbox{% else %}field{% endif %}">
+        {{ field.label }}
+        {{ field }}
+        {% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </div>
+    {% endfor %}
+    <button class="button" type="submit">{{ submit_label }}</button>
+  </form>
+{% endmacro %}

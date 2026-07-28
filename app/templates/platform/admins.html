@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% from "components/nav.html" import platform_nav %}{% from "components/forms.html" import render_form %}
+{% block navigation %}{{ platform_nav() }}{% endblock %}{% block content %}<section class="panel wide"><h1>{{ organization.name }} adminleri</h1>{% for user, membership in admin_rows %}<p>{{ user.email }} · {{ "aktif" if membership.is_active else "pasif" }}</p>{% else %}<p>Admin bulunmuyor.</p>{% endfor %}<h2>Admin ata</h2>{{ render_form(form, "Ata") }}</section>{% endblock %}

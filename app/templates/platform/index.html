@@ -1,0 +1,3 @@
+{% extends "base.html" %}{% from "components/nav.html" import platform_nav %}
+{% block title %}Platform yönetimi{% endblock %}{% block navigation %}{{ platform_nav() }}{% endblock %}
+{% block content %}<section class="panel"><h1>Platform yönetimi</h1><a class="button-link" href="{{ url_for('platform.organizations') }}">Organization listesi</a></section>{% endblock %}

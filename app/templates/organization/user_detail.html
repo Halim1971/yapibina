@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% from "components/forms.html" import render_form %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>{{ user.first_name }} {{ user.last_name }}</h1>
+  <p>{{ user.email }}</p>
+  <p>Organization rolü: {{ membership.role.value }}</p>
+  <form method="post" action="{{ url_for('organization.membership_deactivate', membership_id=membership.id) }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Üyeliği pasifleştir</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>Organization üyeliği</h2>
+  <form method="post" action="{{ url_for('organization.organization_membership', user_id=user.id) }}">
+    {{ organization_form.hidden_tag() }}
+    {% for field in organization_form if field.name not in ("csrf_token", "resource_id") %}
+      <div class="field">{{ field.label }}{{ field }}</div>
+    {% endfor %}
+    <button type="submit">Güncelle</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>Bina üyeliği</h2>
+  <form method="post" action="{{ url_for('organization.building_membership', user_id=user.id) }}">
+    {{ building_form.hidden_tag() }}
+    {% for field in building_form if field.name != "csrf_token" %}
+      <div class="field">{{ field.label }}{{ field }}</div>
+    {% endfor %}
+    <button type="submit">Ata</button>
+  </form>
+</section>
+<section class="panel">
+  <h2>Daire üyeliği</h2>
+  <form method="post" action="{{ url_for('organization.apartment_membership', user_id=user.id) }}">
+    {{ apartment_form.hidden_tag() }}
+    {% for field in apartment_form if field.name != "csrf_token" %}
+      <div class="field">{{ field.label }}{{ field }}</div>
+    {% endfor %}
+    <button type="submit">Ata</button>
+  </form>
+</section>
+{% endblock %}

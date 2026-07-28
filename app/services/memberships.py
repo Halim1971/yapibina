@@ -30,6 +30,13 @@ def _validate_period(starts_at: datetime, ends_at: datetime | None) -> None:
         raise ServiceValidationError("Membership end cannot precede its start.")
 
 
+def validate_membership_period(
+    starts_at: datetime,
+    ends_at: datetime | None,
+) -> None:
+    _validate_period(starts_at, ends_at)
+
+
 def create_organization_membership(
     session: SessionLike,
     *,
@@ -50,9 +57,7 @@ def create_organization_membership(
         )
     )
     if existing is not None:
-        raise MembershipOverlapError(
-            "User already has an organization membership."
-        )
+        raise MembershipOverlapError("User already has an organization membership.")
     membership = OrganizationMembership(
         organization_id=organization_id,
         user_id=user_id,
@@ -128,9 +133,7 @@ def create_apartment_membership(
     if ends_at is not None:
         overlap_conditions.append(ApartmentMembership.starts_at <= ends_at)
 
-    existing = session.scalar(
-        select(ApartmentMembership.id).where(and_(*overlap_conditions))
-    )
+    existing = session.scalar(select(ApartmentMembership.id).where(and_(*overlap_conditions)))
     if existing is not None:
         raise MembershipOverlapError("Apartment membership period overlaps.")
 

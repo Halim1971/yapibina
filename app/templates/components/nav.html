@@ -1,0 +1,10 @@
+{% macro platform_nav() %}
+  <nav class="nav"><a href="{{ url_for('platform.organizations') }}">Organizations</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
+  </nav>
+{% endmacro %}
+{% macro organization_nav() %}
+  <nav class="nav"><a href="{{ url_for('organization.buildings') }}">Binalar</a><a href="{{ url_for('organization.users') }}">Kullanıcılar</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
+  </nav>
+{% endmacro %}

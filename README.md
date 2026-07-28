@@ -34,6 +34,9 @@ Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
 - CSRF koruması ve host-scope session/remember cookie ayarları
 - IP başına yapılandırılabilir login rate limit
 - Kaynak kapsamlı authorization decorator'ları
+- Platform organization, branding, domain ve admin atama ekranları
+- Tenant-scoped bina, daire, kullanıcı ve üyelik yönetimi
+- Organization, building ve user listelerinde sayfalama ve kapsamlı arama
 - Varsayılan Yapıbina tema değişkenleri
 - Pytest, Ruff ve mypy yapılandırması
 
@@ -149,8 +152,8 @@ migrations/         Alembic migration ortamı ve ilk tenant şeması
 
 Bu aşamada tahakkuk, ödeme, payment allocation, banka hareketi, gider, belge,
 duyuru, audit, notification ve subscription modelleri yoktur. Kayıt, parola
-sıfırlama, MFA, yönetim veya resident dashboard ekranları, dosya yükleme,
-import, production PostgreSQL veritabanı, Nginx, systemd, Docker ve background
-job altyapısı oluşturulmamıştır.
+sıfırlama, e-posta daveti/doğrulaması, MFA, resident dashboard ekranları,
+dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
+Docker ve background job altyapısı oluşturulmamıştır.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.

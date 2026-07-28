@@ -268,3 +268,16 @@ Başlıca riskler:
   token loglanmaz.
 - MFA henüz uygulanmamıştır. Platform super admin MFA ilk production yayını
   öncesinde tamamlanmalıdır.
+
+## 22. Yönetim işlemlerinin güvenlik sınırı
+
+- Platform yönetimi tenant hostname üzerinde çalışmaz; tenant yönetimi aktif
+  organization domaini ve güncel organization admin üyeliği gerektirir.
+- Bina, daire, domain ve membership kaynakları kimlikleriyle birlikte
+  organization scope içinde sorgulanır. Formdan organization kimliği alınmaz.
+- Liste araması ve sayfalama da aynı tenant filtresini korur.
+- Duplicate ve integrity hataları ham veritabanı ayrıntısı göstermeyen domain
+  hatalarına çevrilir.
+- Domain verification token'ı listelerde gösterilmez; parola ve hash loglanmaz.
+- E-posta daveti, parola sıfırlama, MFA, DNS/SSL provisioning ve AuditLog modeli
+  henüz uygulanmamıştır.

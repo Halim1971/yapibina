@@ -305,3 +305,20 @@ yaklaşımıyla uygulanmıştır.
 - Kaynak policy/decorator'ları nesneleri aktif tenant organization ile birlikte
   sorgular. Tenant dışı ID'ler 404; tenant içi rol yetersizliği 403 üretir.
 - MFA bu aşamada uygulanmamıştır ve production öncesi zorunlu ayrı teslimattır.
+
+## 22. Uygulanan platform ve organization yönetim çekirdeği
+
+- Platform route'ları yalnız platform hostname ve `platform_admin_required`
+  ile organization, branding, domain ve organization admin atamasını yönetir.
+- Organization route'ları aktif tenant context ve
+  `organization_admin_required` kullanır; organization kimliği hiçbir formdan
+  alınmaz.
+- Route'lar form/HTTP orkestrasyonu yapar. Tenant doğrulaması, uniqueness,
+  üyelik dönemi ve domain state transition kuralları service katmanındadır.
+- Bina, daire ve üyelik kayıtları fiziksel olarak silinmez; `status` veya
+  `is_active` ile yaşam döngüsü yönetilir.
+- Kullanıcı globaldir ve birden fazla organization üyeliğine sahip olabilir.
+  Organization admin global User status veya platform admin bayrağını
+  değiştiremez.
+- Domain provisioning yapılmaz. Açık state machine yalnız izin verilen
+  geçişleri uygular; DNS, SSL ve Nginx operasyonları sonraki aşamadadır.

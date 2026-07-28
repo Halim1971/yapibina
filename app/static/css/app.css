@@ -75,3 +75,105 @@ body {
   font-size: 2rem;
   font-weight: 700;
 }
+
+.nav {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: var(--color-primary);
+}
+
+.nav a,
+.nav button {
+  color: var(--color-white);
+  background: transparent;
+  border: 0;
+  font: inherit;
+}
+
+.nav form {
+  margin-left: auto;
+}
+
+.page:has(.panel) {
+  display: block;
+  max-width: 72rem;
+  margin: 0 auto;
+}
+
+.panel {
+  width: min(100%, 42rem);
+  margin: 1rem auto;
+  padding: 1.5rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.75rem;
+  background: var(--color-white);
+}
+
+.panel.wide {
+  width: 100%;
+}
+
+.section-header,
+.actions,
+.pagination,
+.search {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.section-header {
+  justify-content: space-between;
+}
+
+table {
+  width: 100%;
+  margin: 1rem 0;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-secondary);
+  text-align: left;
+}
+
+.management-form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field input,
+.field select,
+.field textarea,
+.search input {
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.4rem;
+}
+
+.field-error {
+  color: #8a1c1c;
+}
+
+.badge {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 1rem;
+  background: var(--color-surface);
+}
+
+@media (max-width: 42rem) {
+  table {
+    font-size: 0.9rem;
+  }
+
+  .actions {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

@@ -20,8 +20,18 @@ class MembershipOverlapError(ServiceValidationError):
     pass
 
 
+class DuplicateEntityError(ServiceValidationError):
+    pass
+
+
+class InvalidStateTransitionError(ServiceValidationError):
+    pass
+
+
 __all__ = [
     "EntityNotFoundError",
+    "DuplicateEntityError",
+    "InvalidStateTransitionError",
     "MembershipOverlapError",
     "ServiceValidationError",
     "SessionLike",

@@ -1,0 +1,2 @@
+{% extends "base.html" %}{% from "components/nav.html" import platform_nav %}{% from "components/forms.html" import render_form %}
+{% block navigation %}{{ platform_nav() }}{% endblock %}{% block content %}<section class="panel"><h1>{{ organization.name }} marka ayarları</h1>{{ render_form(form) }}</section>{% endblock %}

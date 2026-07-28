@@ -21,3 +21,6 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Minimum parola politikası ve IP tabanlı login rate limit
 - Kaynak kapsamlı authorization policy/decorator'ları
 - Session sonrası user, organization ve membership yetkisi yeniden doğrulaması
+- Platform organization, branding, domain ve organization admin yönetimi
+- Tenant-scoped bina, daire, kullanıcı ve üyelik yönetim ekranları
+- Domain state transition servisi ve yönetim listelerinde sayfalama/arama

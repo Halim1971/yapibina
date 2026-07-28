@@ -338,6 +338,21 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Sonraya bırakılan alternatif:** Redis veya başka paylaşımlı rate-limit backend'i.
 - **Yeniden değerlendirme koşulu:** Production birden fazla Gunicorn worker/process ile yayına alınmadan önce.
 
+## D-043 — Yönetim CRUD işlemleri tenant-scoped service katmanındadır
+
+- **Karar:** Platform işlemleri platform context'te; organization işlemleri
+  hosttan çözülen tenant kimliğiyle yürür. Organization kimliği istemci
+  formundan kabul edilmez.
+- **Gerekçe:** Route veya form manipülasyonunun cross-tenant ilişki kurmasını ve
+  IDOR yoluyla veri ifşasını önlemek.
+- **MVP kapsamı:** Organization, branding, domain, building, apartment, user ve
+  membership yönetimi; scoped arama/sayfalama; status/is_active ile
+  pasifleştirme.
+- **Sonraya bırakılan alternatif:** Generic repository/permission framework,
+  toplu işlemler ve gelişmiş filtreleme.
+- **Yeniden değerlendirme koşulu:** Aynı scope/transaction kuralları yeni
+  modüllerde anlamlı ölçüde tekrar etmeye başlarsa.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:
