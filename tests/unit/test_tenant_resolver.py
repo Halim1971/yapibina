@@ -5,11 +5,18 @@ from app import create_app
 from config.settings import ProductionConfig
 
 
+class MissingTenantLookup:
+    def resolve(self, hostname: str) -> None:
+        del hostname
+        return None
+
+
 def test_unknown_production_hostname_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(ProductionConfig, "SECRET_KEY", "x" * 48)
     app = create_app("production")
+    app.extensions["tenant_hostname_lookup"] = MissingTenantLookup()
 
     response = app.test_client().get(
         "/missing",

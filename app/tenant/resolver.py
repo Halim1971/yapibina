@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Protocol
 
 from flask import Flask, current_app, g, request
+from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 
+from app.extensions import db
+from app.models import (
+    DomainState,
+    Organization,
+    OrganizationDomain,
+    OrganizationStatus,
+)
+from app.models.base import normalize_hostname_value
 from app.tenant.exceptions import UnknownTenantHost
+
+logger = logging.getLogger(__name__)
 
 HEALTH_ENDPOINT = "public.health"
 LOCAL_HOSTNAMES = frozenset({"localhost", "127.0.0.1", "::1"})
@@ -15,6 +28,7 @@ TEST_HOSTNAMES = frozenset({"test", "test.local", "testserver"})
 @dataclass(frozen=True, slots=True)
 class TenantContext:
     organization_id: str
+    organization_slug: str
     hostname: str
 
 
@@ -23,10 +37,37 @@ class TenantHostnameLookup(Protocol):
         """Return a tenant only for a persisted, verified and active hostname."""
 
 
-class NullTenantHostnameLookup:
+class DatabaseTenantHostnameLookup:
     def resolve(self, hostname: str) -> TenantContext | None:
-        del hostname
-        return None
+        statement = (
+            select(
+                Organization.id,
+                Organization.slug,
+                OrganizationDomain.hostname,
+            )
+            .join(
+                OrganizationDomain,
+                OrganizationDomain.organization_id == Organization.id,
+            )
+            .where(
+                OrganizationDomain.hostname == hostname,
+                OrganizationDomain.is_active.is_(True),
+                OrganizationDomain.state == DomainState.ACTIVE,
+                Organization.status == OrganizationStatus.ACTIVE,
+            )
+        )
+        try:
+            row = db.session.execute(statement).one_or_none()
+        except SQLAlchemyError:
+            logger.exception("Tenant hostname lookup failed")
+            raise
+        if row is None:
+            return None
+        return TenantContext(
+            organization_id=str(row.id),
+            organization_slug=row.slug,
+            hostname=row.hostname,
+        )
 
 
 def normalize_hostname(host: str) -> str:
@@ -38,7 +79,11 @@ def normalize_hostname(host: str) -> str:
         candidate = candidate[1:closing_bracket]
     else:
         candidate = candidate.partition(":")[0]
-    return candidate.rstrip(".")
+    candidate = candidate.rstrip(".")
+    try:
+        return normalize_hostname_value(candidate)
+    except ValueError:
+        return ""
 
 
 def _is_controlled_non_tenant_host(hostname: str) -> bool:
@@ -83,5 +128,5 @@ def register_tenant_resolution(
     app: Flask,
     lookup: TenantHostnameLookup | None = None,
 ) -> None:
-    app.extensions["tenant_hostname_lookup"] = lookup or NullTenantHostnameLookup()
+    app.extensions["tenant_hostname_lookup"] = lookup or DatabaseTenantHostnameLookup()
     app.before_request(resolve_request_tenant)

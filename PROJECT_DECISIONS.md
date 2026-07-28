@@ -258,6 +258,54 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Sonraya bırakılan alternatif:** Ayrı PostgreSQL, obje depolama, çoklu uygulama sunucusu; Kubernetes.
 - **Yeniden değerlendirme koşulu:** SLA, kapasite, bakım penceresi veya arıza etkisi tek VPS sınırını aşarsa; geçiş için Kubernetes zorunlu varsayılmaz.
 
+## D-033 — UUID primary key
+
+- **Karar:** Tenant çekirdeğindeki tüm tablolar uygulama tarafında üretilen UUID primary key kullanır.
+- **Gerekçe:** Tahmin edilebilir ardışık kimliklerden kaçınmak ve PostgreSQL/SQLite taşınabilirliğini korumak.
+- **MVP kapsamı:** SQLAlchemy `Uuid(as_uuid=True)` ve `uuid4` default'u.
+- **Sonraya bırakılan alternatif:** UUIDv7 veya veritabanı tarafında UUID üretimi.
+- **Yeniden değerlendirme koşulu:** Sıralı yazma performansı ölçülmüş bir darboğaz oluşturursa.
+
+## D-034 — Taşınabilir string enum
+
+- **Karar:** Enum'lar `SQLAlchemy Enum(native_enum=False)` ve check constraint olarak saklanır.
+- **Gerekçe:** PostgreSQL native enum migration zorluğunu azaltmak ve SQLite test uyumluluğu sağlamak.
+- **MVP kapsamı:** User, organization, membership, domain type ve domain state alanları.
+- **Sonraya bırakılan alternatif:** PostgreSQL native enum veya lookup tabloları.
+- **Yeniden değerlendirme koşulu:** Enum metadata, çeviri veya dinamik yönetim gereksinimi oluşursa.
+
+## D-035 — Organization ve building üyelikleri ayrıdır
+
+- **Karar:** Organization rolü OrganizationMembership, bina operasyon rolü BuildingMembership ile temsil edilir.
+- **Gerekçe:** Organization admin'in tüm tenant kapsamını, building manager'ın yalnız atanmış binaları yönetmesini açıkça ayırmak.
+- **MVP kapsamı:** Organization admin/member ve building manager/staff rolleri ayrı tablolardadır.
+- **Sonraya bırakılan alternatif:** Tek genel polymorphic role tablosu veya tam RBAC permission matrisi.
+- **Yeniden değerlendirme koşulu:** Rol sayısı ve kaynak bazlı izinler mevcut modeli belirgin biçimde aşarsa.
+
+## D-036 — Tarihsel apartment membership
+
+- **Karar:** ApartmentMembership fiziksel silinmez; aktiflik ve başlangıç/bitiş zamanı taşır. Aynı kullanıcı daha sonraki ayrı dönemde tekrar ilişkilendirilebilir.
+- **Gerekçe:** Sakin geçmişini korurken yalnız güncel aktif ilişkinin erişim vermesini sağlamak.
+- **MVP kapsamı:** Service seviyesinde timezone-aware dönem ve aktif dönem çakışma kontrolü.
+- **Sonraya bırakılan alternatif:** PostgreSQL exclusion constraint ile veritabanı seviyesinde zaman aralığı çakışma koruması.
+- **Yeniden değerlendirme koşulu:** Eşzamanlı membership yazma hacmi service kontrolünde yarış koşulu riski yaratırsa.
+
+## D-037 — Organization başına tek primary domain
+
+- **Karar:** Her organization için en fazla bir `is_primary=true` domain bulunur.
+- **Gerekçe:** Canonical host davranışını belirsiz bırakmamak.
+- **MVP kapsamı:** PostgreSQL ve SQLite partial unique index ile service ön kontrolü birlikte uygulanır.
+- **Sonraya bırakılan alternatif:** Domain tipine göre birden fazla primary veya öncelik sırası.
+- **Yeniden değerlendirme koşulu:** Farklı ürün kanalları ayrı canonical domain gerektirirse.
+
+## D-038 — Organization admin tüm organization binalarına erişir
+
+- **Karar:** Aktif organization admin, her bina için BuildingMembership gerekmeksizin kendi organization'ındaki tüm bina operasyonlarına yetkilidir.
+- **Gerekçe:** Organization admin tenant yöneticisidir; bina başına yinelenen atama gereksiz ve hataya açıktır.
+- **MVP kapsamı:** Service/policy kontrolünde organization membership tenant sınırı olarak değerlendirilir; başka organization erişimi reddedilir.
+- **Sonraya bırakılan alternatif:** Organization admin'e bina bazlı kısıt veya özel permission set.
+- **Yeniden değerlendirme koşulu:** Büyük yönetim firmalarında departman/bölge bazlı yetki ayrımı gerekirse.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:
@@ -269,7 +317,6 @@ Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıd�
 - Geçici/eski domainlerin açık kalma ve karantina süreleri
 - Kesin backup retention gün/hafta/ay değerleri
 - Toplu tahakkuk batch metadata ve önizleme/idempotency ayrıntıları
-- Organization admin'in tüm bina operasyonlarına erişim kapsamı
 
 ## Genel varsayımlar
 

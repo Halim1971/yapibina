@@ -11,10 +11,3 @@ class Base(DeclarativeBase):
 db = SQLAlchemy(model_class=Base)
 migrate = Migrate()
 login_manager = LoginManager()
-
-
-@login_manager.user_loader  # type: ignore[untyped-decorator]
-def load_user_placeholder(user_id: str) -> None:
-    # TODO: Replace this safe placeholder when the real User model is approved.
-    del user_id
-    return None

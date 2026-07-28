@@ -483,3 +483,23 @@ Kritik eylemlerin append-only izi.
 - Çok sayıda geniş `jsonb` audit kaydı büyüme ve kişisel veri riski doğurur.
 - Gereğinden fazla indeks yazma maliyetini artırabilir; üretim sorguları ölçülmelidir.
 - Branding-document FK döngüsü migration planını karmaşıklaştırabilir.
+
+## 9. Uygulanan ilk şema notları
+
+İlk migration aşağıdaki dokuz tenant çekirdek tablosunu oluşturur:
+
+`users`, `organizations`, `organization_brandings`, `organization_domains`,
+`organization_memberships`, `buildings`, `building_memberships`, `apartments`,
+`apartment_memberships`.
+
+Uygulanan şema, bu belgedeki uzun vadeli tasarımın finansal olmayan ilk
+kesitidir. Kullanıcı adı `first_name` ve `last_name` olarak ayrılmıştır.
+Membership zamanları `starts_at`/`ends_at`, aktiflik ise `is_active` ile
+tutulur. Organization başına tek primary domain PostgreSQL ve SQLite partial
+unique indexiyle korunur; service kontrolü kullanıcı dostu erken hata sağlar.
+
+Enum alanları taşınabilirlik için `native_enum=False` ve check constraint ile
+üretilmiştir. PostgreSQL exclusion constraint kullanılmamıştır; tarihsel
+ApartmentMembership çakışması tenant-safe service içinde kontrol edilir.
+Production concurrency koşulları büyüdüğünde transaction/locking veya exclusion
+constraint yeniden değerlendirilmelidir.

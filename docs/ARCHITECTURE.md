@@ -268,3 +268,23 @@ Operasyonel gereksinimler:
 - Yerel storage yedeğinin veritabanı yedeğiyle tutarsız olması geri yüklemeyi zorlaştırabilir.
 - CSV/Excel verisi formül, encoding, tarih ve ondalık biçimi açısından güvenilmezdir.
 - White-label özelleştirmesinin sınırsızlaşması bakım maliyetini artırabilir.
+
+## 20. Uygulanan tenant çekirdeği
+
+İlk uygulama aşamasında User, Organization, OrganizationBranding,
+OrganizationDomain, OrganizationMembership, Building, BuildingMembership,
+Apartment ve ApartmentMembership modelleri SQLAlchemy 2.x typed model
+yaklaşımıyla uygulanmıştır.
+
+- UUID değerleri uygulamada üretilir ve SQLAlchemy `Uuid` ile PostgreSQL/SQLite
+  arasında taşınır.
+- Enum'lar native PostgreSQL enum yerine `native_enum=False` string/check
+  constraint yaklaşımıyla saklanır.
+- Building ve Apartment altındaki doğrudan `organization_id` değerleri birleşik
+  foreign keylerle mümkün olduğu ölçüde veritabanında da korunur.
+- HTTP'den bağımsız service fonksiyonları cross-tenant ilişkiyi ve membership
+  dönem çakışmasını reddeder.
+- Tenant resolver yalnız aktif domain, `active` domain state ve aktif
+  organization birleşiminden tenant context üretir.
+- Apartment membership dönem çakışması MVP'de exclusion constraint yerine
+  service sorgusu ve transaction disipliniyle korunur.

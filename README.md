@@ -11,13 +11,13 @@ Resident deneyimi dört ana işleve odaklanacaktır:
 3. Giderler ve belgeleri
 4. Duyurular
 
-Her yönetim firması ileride kendi markası ve doğrulanmış alan adıyla aynı
-uygulamayı kullanabilecektir. Mevcut iskelette yalnız güvenli tenant çözümleme
-arayüzü vardır; organization/domain modelleri ve veritabanı sorgusu henüz yoktur.
+Her yönetim firması kendi markası ve doğrulanmış alan adıyla aynı uygulamayı
+kullanabilecektir. Temel tenant, domain, üyelik, bina ve daire modelleri
+hazırdır; finansal işlevler henüz bulunmamaktadır.
 
 ## Mevcut durum
 
-Bu sürüm yalnız profesyonel Flask proje temelidir:
+Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
 
 - Application factory
 - Development, testing ve production yapılandırmaları
@@ -25,7 +25,11 @@ Bu sürüm yalnız profesyonel Flask proje temelidir:
 - Blueprint sınırları
 - JSON `/health` endpoint'i
 - Merkezi 404, 421 ve 500 hata yönetimi
-- Güvenli tenant-resolution iskeleti
+- Aktif OrganizationDomain sorgusuna bağlı güvenli tenant resolution
+- User, Organization, Branding, Domain, Building ve Apartment modelleri
+- Organization, building ve apartment membership modelleri
+- Cross-tenant ilişkiyi reddeden temel service katmanı
+- İlk Alembic migration'ı
 - Varsayılan Yapıbina tema değişkenleri
 - Pytest, Ruff ve mypy yapılandırması
 
@@ -75,6 +79,24 @@ Beklenen yanıt:
 {"service":"yapibina","status":"ok"}
 ```
 
+## Veritabanı ve migration
+
+Development varsayılanı yerel SQLite'tır. Production yapılandırması yalnız
+PostgreSQL bağlantı adresini kabul eder. Migration çalıştırmak için:
+
+```bash
+flask --app wsgi:app db upgrade
+```
+
+Yeni bir model değişikliği onaylandıktan sonra migration üretme örneği:
+
+```bash
+flask --app wsgi:app db migrate -m "açıklayıcı migration mesajı"
+```
+
+Migration production'a uygulanmadan önce PostgreSQL üzerinde ayrıca
+incelenmeli ve staging ortamında denenmelidir.
+
 ## Kalite kontrolleri
 
 ```bash
@@ -88,10 +110,10 @@ mypy
 ```text
 app/
   blueprints/       HTTP modül sınırları
-  models/           İleride eklenecek SQLAlchemy modelleri
+  models/           Tenant çekirdeğinin SQLAlchemy 2.x modelleri
   repositories/     İleride eklenecek tenant-scoped veri erişimi
-  services/         İleride eklenecek iş kuralları
-  tenant/           Host normalizasyonu ve tenant çözümleme arayüzü
+  services/         Tenant-safe ilişki ve doğrulama servisleri
+  tenant/           Host normalizasyonu ve gerçek domain lookup
   templates/        Ortak Jinja tabanı ve hata sayfaları
   static/           Varsayılan sade CSS ve JavaScript
 config/             Ortam yapılandırmaları
@@ -99,13 +121,14 @@ docs/               Onaylanmış mimari belgeler
 instance/           Git dışı yerel runtime verileri
 scripts/            İleride eklenecek operasyon yardımcıları
 tests/              Unit, integration ve functional testler
+migrations/         Alembic migration ortamı ve ilk tenant şeması
 ```
 
 ## Henüz bulunmayan özellikler
 
-Bu aşamada organization, domain, kullanıcı, bina, daire, tahakkuk, ödeme, banka
-hareketi, gider ve duyuru modelleri yoktur. Migration, gerçek login, yönetim veya
-resident ekranları, dosya yükleme, import, PostgreSQL veritabanı, Nginx,
-systemd, Docker ve background job altyapısı oluşturulmamıştır.
+Bu aşamada tahakkuk, ödeme, payment allocation, banka hareketi, gider, belge,
+duyuru, audit, notification ve subscription modelleri yoktur. Gerçek login,
+yönetim veya resident ekranları, dosya yükleme, import, production PostgreSQL
+veritabanı, Nginx, systemd, Docker ve background job altyapısı oluşturulmamıştır.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.

@@ -4,6 +4,7 @@ import os
 
 from flask import Flask
 
+from app import models as models
 from app.blueprints import register_blueprints
 from app.context import register_context_processors
 from app.errors import register_error_handlers
@@ -31,3 +32,6 @@ def create_app(config_name: str | None = None) -> Flask:
     register_tenant_resolution(app)
 
     return app
+
+
+__all__ = ["create_app", "models"]
