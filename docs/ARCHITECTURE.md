@@ -322,3 +322,29 @@ yaklaşımıyla uygulanmıştır.
   değiştiremez.
 - Domain provisioning yapılmaz. Açık state machine yalnız izin verilen
   geçişleri uygular; DNS, SSL ve Nginx operasyonları sonraki aşamadadır.
+
+## 23. Aidat ve ödeme MVP çekirdeği
+
+Finansal kapsam dört tabloyla sınırlıdır:
+
+- `ChargeBatch`: bina/dönem bazlı toplu aidat posting komutu ve durumu.
+- `Charge`: daireye ait posted borç.
+- `Payment`: daire için alınan posted ödeme.
+- `PaymentAllocation`: ödemenin aynı dairedeki borca uygulanan kısmı.
+
+Tüm para değerleri `Numeric(14, 2)`/`Decimal` kullanır. Float ve currency
+tablosu yoktur. Batch posting aktif daireleri tenant scope içinde seçer ve
+nested transaction ile ya tamamen gerçekleşir ya hiç charge bırakmaz.
+
+Allocation ödeme ve charge tutarını aşamaz; aynı payment-charge çifti unique
+olur. Otomatik allocation açık borçları `due_date`, `created_at`, UUID sırasıyla
+deterministik biçimde tüketir. Fazla ödeme allocation edilmeden kalabilir.
+
+Posted Charge ve Payment temel finansal alanları ORM event kontrolüyle
+immutable'dır. Silme yapılmaz. Charge yalnız geçerli allocation yoksa reversal
+alır; Payment reversal allocation satırlarını silmez fakat bakiye sorgularında
+onları etkisiz kılar. Bakiye kalıcı kolon/cache yerine tenant-scoped aggregate
+sorgulardan hesaplanır.
+
+Bu çekirdek genel muhasebe, çift taraflı ledger, banka entegrasyonu veya gider
+modülü değildir ve bu aşamada route/UI içermez.

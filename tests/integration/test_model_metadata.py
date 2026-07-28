@@ -15,6 +15,10 @@ EXPECTED_TABLES = {
     "building_memberships",
     "apartments",
     "apartment_memberships",
+    "charge_batches",
+    "charges",
+    "payments",
+    "payment_allocations",
 }
 
 
@@ -50,5 +54,11 @@ def test_core_foreign_keys_and_unique_constraints_exist(app: Flask) -> None:
 
 def test_initial_migration_exists() -> None:
     versions = list(Path("migrations/versions").glob("*_create_tenant_core_models.py"))
+
+    assert len(versions) == 1
+
+
+def test_financial_migration_exists() -> None:
+    versions = list(Path("migrations/versions").glob("*_add_charge_and_payment_core.py"))
 
     assert len(versions) == 1

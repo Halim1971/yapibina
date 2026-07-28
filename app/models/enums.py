@@ -48,3 +48,33 @@ class DomainState(StringEnum):
     ACTIVE = "active"
     FAILED = "failed"
     SUSPENDED = "suspended"
+
+
+class ChargeBatchStatus(StringEnum):
+    DRAFT = "draft"
+    POSTED = "posted"
+    CANCELLED = "cancelled"
+
+
+class ChargeType(StringEnum):
+    MONTHLY_DUE = "monthly_due"
+    ADDITIONAL_DUE = "additional_due"
+    MANUAL = "manual"
+
+
+class ChargeStatus(StringEnum):
+    DRAFT = "draft"
+    POSTED = "posted"
+    REVERSED = "reversed"
+
+
+class PaymentMethod(StringEnum):
+    CASH = "cash"
+    BANK_TRANSFER = "bank_transfer"
+    CARD = "card"
+    OTHER = "other"
+
+
+class PaymentStatus(StringEnum):
+    POSTED = "posted"
+    REVERSED = "reversed"

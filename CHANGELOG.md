@@ -24,3 +24,7 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Platform organization, branding, domain ve organization admin yönetimi
 - Tenant-scoped bina, daire, kullanıcı ve üyelik yönetim ekranları
 - Domain state transition servisi ve yönetim listelerinde sayfalama/arama
+- Decimal tabanlı ChargeBatch, Charge, Payment ve PaymentAllocation modelleri
+- Atomik aidat posting, manuel borç, ödeme, allocation ve oldest-first otomatik mahsup servisleri
+- Finansal reversal/immutability, tenant scope ve sorgudan hesaplanan bakiye kuralları
+- Aidat ve ödeme çekirdeği için Alembic migration'ı

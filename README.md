@@ -37,6 +37,8 @@ Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
 - Platform organization, branding, domain ve admin atama ekranları
 - Tenant-scoped bina, daire, kullanıcı ve üyelik yönetimi
 - Organization, building ve user listelerinde sayfalama ve kapsamlı arama
+- Decimal tabanlı ChargeBatch, Charge, Payment ve PaymentAllocation çekirdeği
+- Tenant-scoped aidat posting, ödeme mahsup, bakiye ve reversal servisleri
 - Varsayılan Yapıbina tema değişkenleri
 - Pytest, Ruff ve mypy yapılandırması
 
@@ -104,6 +106,22 @@ flask --app wsgi:app db migrate -m "açıklayıcı migration mesajı"
 Migration production'a uygulanmadan önce PostgreSQL üzerinde ayrıca
 incelenmeli ve staging ortamında denenmelidir.
 
+## Aidat ve ödeme çekirdeği
+
+Bu aşamada kullanıcı ekranı olmadan yalnız backend finansal temeli bulunur:
+
+- `ChargeBatch`, bir binanın belirli dönem aidatlarını aktif dairelere atomik
+  olarak post eder.
+- `Charge`, dairenin borcunu; `Payment`, alınan ödemeyi temsil eder.
+- `PaymentAllocation`, bir ödemeyi aynı dairedeki bir veya daha fazla borca
+  mahsup eder. Otomatik mahsup en eski vadeden başlar.
+- Fazla ödeme allocation yapılmadan kredi niteliğinde bakiye olarak kalabilir.
+- Para değerleri `Numeric(14, 2)` ve Python `Decimal` kullanır.
+- Posted finansal kayıtlar silinmez veya temel tutarları değiştirilmez; hatalar
+  reversal ile kapatılır.
+
+Bu yapı genel muhasebe veya çift taraflı ledger değildir.
+
 ## Kalite kontrolleri
 
 ```bash
@@ -150,8 +168,9 @@ migrations/         Alembic migration ortamı ve ilk tenant şeması
 
 ## Henüz bulunmayan özellikler
 
-Bu aşamada tahakkuk, ödeme, payment allocation, banka hareketi, gider, belge,
-duyuru, audit, notification ve subscription modelleri yoktur. Kayıt, parola
+Bu aşamada banka hareketi, gider, belge, duyuru, audit, notification ve
+subscription modelleri yoktur. Aidat/ödeme için route veya kullanıcı ekranı
+da bulunmaz. Kayıt, parola
 sıfırlama, e-posta daveti/doğrulaması, MFA, resident dashboard ekranları,
 dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
 Docker ve background job altyapısı oluşturulmamıştır.

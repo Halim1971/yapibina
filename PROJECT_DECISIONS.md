@@ -353,6 +353,44 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Aynı scope/transaction kuralları yeni
   modüllerde anlamlı ölçüde tekrar etmeye başlarsa.
 
+## D-044 — Aidat ve ödeme için dört tabloluk minimum finans çekirdeği
+
+- **Karar:** ChargeBatch, Charge, Payment ve PaymentAllocation kullanılır;
+  genel ledger veya çift taraflı muhasebe kurulmaz.
+- **Gerekçe:** Apartman aidatı, ödeme ve mahsup ihtiyacını ERP kapsamına
+  genişlemeden güvenilir biçimde karşılamak.
+- **MVP kapsamı:** Eşit tutarlı toplu aidat, manuel borç, ödeme, kısmi/çoklu
+  allocation, oldest-first auto allocation ve sorgudan bakiye.
+- **Sonraya bırakılan alternatif:** Hesap planı, muhasebe fişi, çoklu para
+  birimi, banka mutabakatı ve daireye özel batch tutarı.
+- **Yeniden değerlendirme koşulu:** Yasal muhasebe entegrasyonu veya farklı
+  tutarlı tahakkuk ürün gereksinimi oluşursa.
+
+## D-045 — Posted finansal kayıtlar immutable ve reversal tabanlıdır
+
+- **Karar:** Posted Charge/Payment temel alanları değiştirilemez ve fiziksel
+  silinmez. Hata reversal ile düzeltilir; allocation bulunan charge doğrudan
+  reverse edilemez.
+- **Gerekçe:** Finansal geçmişi izlenebilir tutmak ve sessiz bakiye değişimini
+  önlemek.
+- **MVP kapsamı:** Status, reversed_at, reversal_reason ve ORM immutability
+  kontrolü; payment reversal allocation satırlarını hesaplarda etkisiz kılar.
+- **Sonraya bırakılan alternatif:** Ayrı reversal hareket modeli ve tam
+  append-only event journal.
+- **Yeniden değerlendirme koşulu:** Audit/yasal kayıt gereksinimi ayrı ters
+  hareket belgesi zorunlu kılarsa.
+
+## D-046 — Para Decimal, bakiye sorgudan hesaplanır
+
+- **Karar:** Para `Numeric(14, 2)`/`Decimal` olarak iki haneye half-up
+  yuvarlanır; kalıcı balance kolonu tutulmaz.
+- **Gerekçe:** Float hatalarını ve denormalize bakiye drift riskini önlemek.
+- **MVP kapsamı:** Tenant-scoped aggregate sorgular, allocation ve reversal
+  filtreleri.
+- **Sonraya bırakılan alternatif:** Snapshot/cache veya materialized view.
+- **Yeniden değerlendirme koşulu:** Ölçülen sorgu hacmi doğruluk kontrollü
+  cache gerektirirse.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

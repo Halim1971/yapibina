@@ -4,12 +4,18 @@ from app.models.domain import OrganizationDomain
 from app.models.enums import (
     ApartmentMembershipRole,
     BuildingMembershipRole,
+    ChargeBatchStatus,
+    ChargeStatus,
+    ChargeType,
     DomainState,
     DomainType,
     OrganizationMembershipRole,
     OrganizationStatus,
+    PaymentMethod,
+    PaymentStatus,
     UserStatus,
 )
+from app.models.financial import Charge, ChargeBatch, Payment, PaymentAllocation
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization, OrganizationBranding
 from app.models.user import User
@@ -21,6 +27,11 @@ __all__ = [
     "Building",
     "BuildingMembership",
     "BuildingMembershipRole",
+    "Charge",
+    "ChargeBatch",
+    "ChargeBatchStatus",
+    "ChargeStatus",
+    "ChargeType",
     "DomainState",
     "DomainType",
     "Organization",
@@ -29,6 +40,10 @@ __all__ = [
     "OrganizationMembership",
     "OrganizationMembershipRole",
     "OrganizationStatus",
+    "Payment",
+    "PaymentAllocation",
+    "PaymentMethod",
+    "PaymentStatus",
     "User",
     "UserStatus",
 ]
