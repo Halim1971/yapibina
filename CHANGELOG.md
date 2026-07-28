@@ -16,3 +16,8 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Aktif domain ve aktif organization sorgusuna bağlı tenant resolver
 - Taşınabilir string enum ve PostgreSQL/SQLite uyumlu constraint/index yaklaşımı
 - Tenant çekirdek tablolarını oluşturan ilk Alembic migration'ı
+- Tenant-domain-membership uyumlu güvenli login ve POST-only logout
+- CSRF koruması, güvenli cookie/session ayarları ve open redirect kontrolü
+- Minimum parola politikası ve IP tabanlı login rate limit
+- Kaynak kapsamlı authorization policy/decorator'ları
+- Session sonrası user, organization ve membership yetkisi yeniden doğrulaması

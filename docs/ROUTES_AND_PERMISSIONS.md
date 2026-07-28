@@ -14,7 +14,7 @@
 |---|---|---|
 | `auth` | `/auth` | tenant hostunda giriş/çıkış |
 | `platform` | `/platform` | merkezi hostta platform yönetimi |
-| `organization` | `/admin` | organization yönetimi |
+| `organization` | `/organization` | organization yetki placeholder'ı |
 | `building` | `/manage` | bina operasyonları |
 | `resident` | `/` | resident'ın dört ana görünümü |
 
@@ -38,8 +38,20 @@ Bilinmeyen host `421 Misdirected Request` veya markasız güvenli `404` ile redd
 |---|---|---|
 | `GET/POST /auth/login` | anonim | Host tenant olmalı; kullanıcı bu tenant'a bağlı olmalı |
 | `POST /auth/logout` | tüm authenticated | CSRF |
-| `GET/POST /auth/forgot-password` | anonim | Hesap keşfini önleyen nötr yanıt |
-| `GET/POST /auth/reset-password/<token>` | anonim | Tek kullanımlık, süreli token; tenant uyumu |
+Parola sıfırlama route'ları henüz uygulanmamıştır.
+
+### Uygulanan login güvenlik davranışı
+
+- Tenant hostunda aktif user + aktif organization + geçerli aktif
+  OrganizationMembership birlikte aranır.
+- Platform hostunda yalnız aktif platform super admin kabul edilir.
+- Başarısız credential/tenant/member kontrolleri aynı genel mesajı üretir.
+- Login ve POST-only logout CSRF korumalıdır.
+- Güvenli relative `next` kabul edilir; harici veya `//` hedefler varsayılan rol
+  hedefine düşer.
+- Hedef önceliği platform → organization/building görevi → resident erişimidir.
+- Tenant dışı building/apartment IDOR denemesi 404, tenant içi yetersiz rol 403
+  üretir.
 
 Yanlış organization domaininde geçerli e-posta/parola kullanılması giriş sağlamaz. Kullanıcıya başka müşteride hesabı bulunduğu açıklanmaz.
 
@@ -69,17 +81,17 @@ Aktif `organization_membership(role=organization_admin)` gerekir.
 
 | Yöntem ve route | Amaç |
 |---|---|
-| `GET /admin/dashboard` | Organization özeti |
-| `GET/POST /admin/settings` | Firma ayarları |
-| `GET/POST /admin/branding` | Tema ve marka |
-| `GET /admin/users` | Firma kullanıcıları |
-| `GET/POST /admin/users/invite` | Kullanıcı daveti |
-| `POST /admin/users/<user_id>/status` | Üyelik durumu |
-| `GET /admin/buildings` | Binalar |
-| `GET/POST /admin/buildings/new` | Bina oluşturma |
-| `GET/POST /admin/buildings/<building_id>` | Bina görüntüleme/düzenleme |
-| `GET/POST /admin/buildings/<building_id>/managers` | Manager atama |
-| `POST /admin/apartment-memberships/<membership_id>/status` | Sakin üyeliğini aktif/pasif yapma |
+| `GET /organization/dashboard` | Organization özeti |
+| `GET/POST /organization/settings` | Firma ayarları |
+| `GET/POST /organization/branding` | Tema ve marka |
+| `GET /organization/users` | Firma kullanıcıları |
+| `GET/POST /organization/users/invite` | Kullanıcı daveti |
+| `POST /organization/users/<user_id>/status` | Üyelik durumu |
+| `GET /organization/buildings` | Binalar |
+| `GET/POST /organization/buildings/new` | Bina oluşturma |
+| `GET/POST /organization/buildings/<building_id>` | Bina görüntüleme/düzenleme |
+| `GET/POST /organization/buildings/<building_id>/managers` | Manager atama |
+| `POST /organization/apartment-memberships/<membership_id>/status` | Sakin üyeliğini aktif/pasif yapma |
 
 Organization admin, kendi organization'ındaki bina operasyon route'larına da policy kararıyla erişebilir. Bu karar açıkça tanımlanmalı ve test edilmelidir.
 

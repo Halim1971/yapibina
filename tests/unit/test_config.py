@@ -11,6 +11,17 @@ def test_testing_config_does_not_require_production_secret() -> None:
     assert app.config["SECRET_KEY"] == TestingConfig.SECRET_KEY
 
 
+def test_production_security_settings_are_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(ProductionConfig, "SECRET_KEY", "x" * 48)
+    app = create_app("production")
+
+    assert app.config["SESSION_COOKIE_SECURE"] is True
+    assert app.config["REMEMBER_COOKIE_SECURE"] is True
+    assert app.config["WTF_CSRF_ENABLED"] is True
+
+
 @pytest.mark.parametrize("weak_secret", [None, "", "change-me", "short"])
 def test_production_rejects_missing_or_weak_secret(
     monkeypatch: pytest.MonkeyPatch,

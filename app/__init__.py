@@ -8,7 +8,7 @@ from app import models as models
 from app.blueprints import register_blueprints
 from app.context import register_context_processors
 from app.errors import register_error_handlers
-from app.extensions import db, login_manager, migrate
+from app.extensions import csrf, db, limiter, login_manager, migrate
 from app.tenant.resolver import register_tenant_resolution
 from config import get_config
 
@@ -25,6 +25,11 @@ def create_app(config_name: str | None = None) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Bu sayfayı görüntülemek için giriş yapmalısınız."
+    login_manager.login_message_category = "warning"
+    csrf.init_app(app)
+    limiter.init_app(app)
 
     register_blueprints(app)
     register_error_handlers(app)

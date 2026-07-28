@@ -30,6 +30,10 @@ Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
 - Organization, building ve apartment membership modelleri
 - Cross-tenant ilişkiyi reddeden temel service katmanı
 - İlk Alembic migration'ı
+- Domain ve membership uyumunu doğrulayan güvenli login/logout
+- CSRF koruması ve host-scope session/remember cookie ayarları
+- IP başına yapılandırılabilir login rate limit
+- Kaynak kapsamlı authorization decorator'ları
 - Varsayılan Yapıbina tema değişkenleri
 - Pytest, Ruff ve mypy yapılandırması
 
@@ -105,6 +109,23 @@ ruff check .
 mypy
 ```
 
+## Kimlik doğrulama
+
+Giriş yalnız kullanıcının yetkili olduğu host üzerinde çalışır:
+
+- Platform hostname yalnız aktif platform super admin hesaplarını kabul eder.
+- Tenant hostname aktif User, Organization, Domain ve OrganizationMembership gerektirir.
+- Platform super admin tenant hostunda otomatik tenant yetkisi kazanmaz.
+- Login ve logout POST işlemleri CSRF korumalıdır.
+- Harici ve protocol-relative `next` hedefleri reddedilir.
+
+Login rate limit varsayılan olarak IP başına dakikada 5 ve saatte 30 denemedir.
+Mevcut `memory://` storage yalnız tek süreçli development/test için uygundur.
+Çok worker production öncesi ortak storage gerekir; Redis bu aşamada kurulmamıştır.
+
+MFA henüz uygulanmamıştır. Platform super admin MFA zorunluluğu production
+yayınından önce ayrı bir aşamada tamamlanacaktır.
+
 ## Yapı
 
 ```text
@@ -127,8 +148,9 @@ migrations/         Alembic migration ortamı ve ilk tenant şeması
 ## Henüz bulunmayan özellikler
 
 Bu aşamada tahakkuk, ödeme, payment allocation, banka hareketi, gider, belge,
-duyuru, audit, notification ve subscription modelleri yoktur. Gerçek login,
-yönetim veya resident ekranları, dosya yükleme, import, production PostgreSQL
-veritabanı, Nginx, systemd, Docker ve background job altyapısı oluşturulmamıştır.
+duyuru, audit, notification ve subscription modelleri yoktur. Kayıt, parola
+sıfırlama, MFA, yönetim veya resident dashboard ekranları, dosya yükleme,
+import, production PostgreSQL veritabanı, Nginx, systemd, Docker ve background
+job altyapısı oluşturulmamıştır.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.

@@ -16,12 +16,57 @@ body {
   place-items: center;
 }
 
-.message {
+.message,
+.auth-card {
   width: min(100%, 32rem);
   padding: 2rem;
   border: 1px solid var(--color-secondary);
   border-radius: 0.75rem;
   background: var(--color-white);
+}
+
+.auth-card h1 {
+  margin-top: 0;
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  margin-top: 1rem;
+}
+
+.field input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.4rem;
+  font: inherit;
+}
+
+.checkbox {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.button {
+  width: 100%;
+  padding: 0.8rem;
+  border: 0;
+  border-radius: 0.4rem;
+  color: var(--color-white);
+  background: var(--color-primary);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.alert {
+  padding: 0.75rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.4rem;
+  background: var(--color-surface);
 }
 
 .status-code {

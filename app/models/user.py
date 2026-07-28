@@ -13,6 +13,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from app.extensions import Base, db, login_manager
 from app.models.base import TimestampMixin, UUIDPrimaryKeyMixin, normalize_email
 from app.models.enums import UserStatus
+from app.security.password_policy import validate_password
 
 if TYPE_CHECKING:
     from app.models.apartment import ApartmentMembership
@@ -69,8 +70,7 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, UserMixin, Base):  # type: ignor
         return str(self.id)
 
     def set_password(self, password: str) -> None:
-        if not password or not password.strip():
-            raise ValueError("Password cannot be empty.")
+        validate_password(password, email=self.email)
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password: str) -> bool:

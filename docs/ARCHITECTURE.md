@@ -288,3 +288,20 @@ yaklaşımıyla uygulanmıştır.
   organization birleşiminden tenant context üretir.
 - Apartment membership dönem çakışması MVP'de exclusion constraint yerine
   service sorgusu ve transaction disipliniyle korunur.
+
+## 21. Uygulanan authentication ve authorization çekirdeği
+
+- Login, gelen hostun platform veya tenant context'iyle kullanıcı rolünü
+  eşleştirir. Tenant login aktif OrganizationMembership; platform login aktif
+  `is_platform_super_admin` gerektirir.
+- Session yalnız kimlik kanıtıdır. Korumalı her istekte User status ve ilgili
+  membership/dönem yeniden sorgulanır.
+- Login ve logout Flask-WTF CSRF korumasındadır. Login sonrası session içeriği
+  temizlenerek fixation riski azaltılır.
+- `next` yalnız aynı origin içindeki `/` ile başlayan ve `//` olmayan relative
+  path için kabul edilir.
+- Login rate limit IP başına dakika/saat sınırlarıyla uygulanır. MVP memory
+  storage tek süreç içindir; çok worker production ortak storage gerektirir.
+- Kaynak policy/decorator'ları nesneleri aktif tenant organization ile birlikte
+  sorgular. Tenant dışı ID'ler 404; tenant içi rol yetersizliği 403 üretir.
+- MFA bu aşamada uygulanmamıştır ve production öncesi zorunlu ayrı teslimattır.

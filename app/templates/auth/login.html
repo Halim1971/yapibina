@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Giriş · Yapıbina{% endblock %}
+{% block content %}
+  <section class="auth-card">
+    <header>
+      <h1>Yapıbina</h1>
+      <p>Hesabınıza güvenli biçimde giriş yapın.</p>
+    </header>
+
+    {% with messages = get_flashed_messages(category_filter=["error"]) %}
+      {% if messages %}
+        <div class="alert" role="alert">{{ messages[0] }}</div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="field">
+        {{ form.email.label }}
+        {{ form.email(autocomplete="email", inputmode="email") }}
+      </div>
+      <div class="field">
+        {{ form.password.label }}
+        {{ form.password(autocomplete="current-password") }}
+      </div>
+      <div class="checkbox">
+        {{ form.remember_me() }}
+        {{ form.remember_me.label }}
+      </div>
+      {{ form.submit(class_="button") }}
+    </form>
+  </section>
+{% endblock %}

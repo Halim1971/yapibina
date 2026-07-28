@@ -20,7 +20,7 @@ Güvenlik yalnız route decorator'larına bırakılmaz; Nginx, Flask request lif
 - Başarılı girişte session ID yenilenir; privilege değişiminde mevcut session'lar geçersizleştirilebilir.
 - Parola sıfırlama token'ı yüksek entropili, tek kullanımlık, süreli ve kullanıcı/parola sürümüne bağlıdır.
 - `platform_super_admin` için MFA ilk production yayınından önce zorunludur.
-- `organization_admin` için MFA altyapısı bulunur ve organization/platform politikasıyla daha sonra zorunlu yapılabilir.
+- `organization_admin` için MFA desteği mimaride planlanır ve sonraki bir aşamada zorunlu yapılabilir; henüz uygulanmamıştır.
 - `building_manager` ve `resident` için MFA MVP'de zorunlu değildir.
 - Platform destek erişimi normal/sınırsız tenant erişimi sağlamaz. Gerektiğinde süreli, gerekçeli, açıkça yetkilendirilmiş ve eksiksiz audit edilen break-glass oturumu kullanılır.
 - Destek veya yönetici hiçbir koşulda kullanıcının parolasını göremez/öğrenemez.
@@ -33,7 +33,7 @@ Güvenlik yalnız route decorator'larına bırakılmaz; Nginx, Flask request lif
 - Uzun parola/passphrase desteklenir; makul maksimumla DoS önlenir.
 - Bilinen sızdırılmış parola kontrolü, güvenli entegrasyon mümkünse değerlendirilir.
 - Zorunlu periyodik değiştirme yerine olay/risk bazlı değiştirme uygulanır.
-- Platform admin için MFA zorunlu, organization admin için desteklenen ve zorunlu kılınabilir policy uygulanır.
+- Platform admin MFA, production yayını öncesindeki ayrı bir teslimatta zorunlu kılınacaktır; organization admin için desteklenen ve zorunlu kılınabilir policy de henüz uygulanmamıştır.
 
 ## 4. Session ve cookie
 
@@ -251,3 +251,20 @@ Başlıca riskler:
 - Proxy header yanlış yapılandırması host/IP kontrollerini bozar.
 - Audit içinde gereksiz kişisel veri saklanması yeni risk yaratır.
 - Güvenlik yamalarının gecikmesi internet-facing sistemi savunmasız bırakır.
+
+## 21. Uygulanan auth güvenlik durumu
+
+- Flask-Login user loader her istekte güncel User kaydını UUID ile yükler.
+- Korumalı route'lar user ve membership durumunu yeniden doğrular;
+  inactive/locked user session'ı kapatılır.
+- Login ve logout Flask-WTF CSRF korumasındadır; CSRF hatası token veya teknik
+  ayrıntı göstermeyen 400 yanıtı verir.
+- Session ve remember cookie host-only, HttpOnly ve SameSite=Lax'tır; production
+  Secure zorunludur.
+- Login IP başına varsayılan `5/minute;30/hour` ile sınırlıdır. Memory storage
+  tek process development/test içindir; çok worker production ortak storage
+  gerektirir. Redis henüz kurulmamıştır.
+- Başarılı login güvenli kimlik/tenant bağlamıyla loglanır; parola, hash ve CSRF
+  token loglanmaz.
+- MFA henüz uygulanmamıştır. Platform super admin MFA ilk production yayını
+  öncesinde tamamlanmalıdır.

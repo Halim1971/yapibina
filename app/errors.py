@@ -5,6 +5,7 @@ from http import HTTPStatus
 from typing import Any
 
 from flask import Flask, jsonify, render_template, request
+from flask_wtf.csrf import CSRFError
 from werkzeug.exceptions import HTTPException
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,21 @@ def _error_response(status_code: int, message: str) -> tuple[Any, int]:
 
 
 def register_error_handlers(app: Flask) -> None:
+    @app.errorhandler(CSRFError)
+    def csrf_error(_: CSRFError) -> tuple[Any, int]:
+        return _error_response(
+            HTTPStatus.BAD_REQUEST,
+            "Güvenlik doğrulaması başarısız oldu. Lütfen yeniden deneyin.",
+        )
+
+    @app.errorhandler(400)
+    def bad_request(_: HTTPException) -> tuple[Any, int]:
+        return _error_response(HTTPStatus.BAD_REQUEST, "Geçersiz istek.")
+
+    @app.errorhandler(403)
+    def forbidden(_: HTTPException) -> tuple[Any, int]:
+        return _error_response(HTTPStatus.FORBIDDEN, "Bu işlem için yetkiniz yok.")
+
     @app.errorhandler(404)
     def not_found(_: HTTPException) -> tuple[Any, int]:
         return _error_response(HTTPStatus.NOT_FOUND, "Sayfa bulunamadı.")
@@ -43,4 +59,11 @@ def register_error_handlers(app: Flask) -> None:
         return _error_response(
             HTTPStatus.INTERNAL_SERVER_ERROR,
             "Beklenmeyen bir hata oluştu.",
+        )
+
+    @app.errorhandler(429)
+    def too_many_requests(_: HTTPException) -> tuple[Any, int]:
+        return _error_response(
+            HTTPStatus.TOO_MANY_REQUESTS,
+            "Çok fazla giriş denemesi yapıldı. Lütfen daha sonra yeniden deneyin.",
         )

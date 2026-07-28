@@ -6,6 +6,8 @@ from app.extensions import db
 from app.models import User, UserStatus
 from app.models.user import load_user
 
+VALID_PASSWORD = "correct horse battery staple 1"
+
 
 def make_user(email: str = "USER@Example.COM") -> User:
     user = User(
@@ -14,7 +16,7 @@ def make_user(email: str = "USER@Example.COM") -> User:
         first_name="Test",
         last_name="User",
     )
-    user.set_password("correct horse battery staple")
+    user.set_password(VALID_PASSWORD)
     return user
 
 
@@ -27,15 +29,15 @@ def test_email_is_normalized() -> None:
 def test_password_is_hashed_and_verified() -> None:
     user = make_user()
 
-    assert user.password_hash != "correct horse battery staple"
-    assert user.check_password("correct horse battery staple") is True
+    assert user.password_hash != VALID_PASSWORD
+    assert user.check_password(VALID_PASSWORD) is True
     assert user.check_password("wrong password") is False
 
 
 def test_blank_password_is_rejected() -> None:
     user = make_user()
 
-    with pytest.raises(ValueError, match="empty"):
+    with pytest.raises(ValueError, match="at least"):
         user.set_password("   ")
 
 

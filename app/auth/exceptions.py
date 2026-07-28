@@ -1,0 +1,2 @@
+class AuthorizationContextError(RuntimeError):
+    pass

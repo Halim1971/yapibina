@@ -238,7 +238,7 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 
 - **Karar:** Platform super admin MFA production öncesi zorunlu; organization admin MFA desteklenir ve zorunlu yapılabilir. Destek erişimi süreli, gerekçeli, açık yetkili ve audit'li break-glass'tır.
 - **Gerekçe:** En yüksek ayrıcalıklı hesapları ve tenant gizliliğini korumak.
-- **MVP kapsamı:** Platform admin MFA enforcement, destek yetkilendirme/audit/expiry; kullanıcı parolası hiçbir zaman görünmez.
+- **MVP kapsamı:** Bu authentication aşamasında MFA uygulanmamıştır. Platform admin MFA enforcement production öncesi zorunlu sonraki teslimattır; kullanıcı parolası hiçbir zaman görünmez.
 - **Sonraya bırakılan alternatif:** Organization admin için varsayılan zorunlu MFA; building manager/resident MFA; gelişmiş PAM.
 - **Yeniden değerlendirme koşulu:** Tehdit modeli, sözleşme, regülasyon veya hesap ele geçirme bulguları daha geniş MFA gerektirirse.
 
@@ -305,6 +305,38 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **MVP kapsamı:** Service/policy kontrolünde organization membership tenant sınırı olarak değerlendirilir; başka organization erişimi reddedilir.
 - **Sonraya bırakılan alternatif:** Organization admin'e bina bazlı kısıt veya özel permission set.
 - **Yeniden değerlendirme koşulu:** Büyük yönetim firmalarında departman/bölge bazlı yetki ayrımı gerekirse.
+
+## D-039 — Host ve membership birlikte login sınırıdır
+
+- **Karar:** Tenant login aktif domain context ve geçerli OrganizationMembership; platform login aktif platform super admin gerektirir.
+- **Gerekçe:** Doğru parola tek başına başka organization veya platform erişimi sağlamamalıdır.
+- **MVP kapsamı:** Platform ve tenant login ayrımı ile genel, hesap ifşa etmeyen hata.
+- **Sonraya bırakılan alternatif:** Break-glass destek erişimi ve organization seçici.
+- **Yeniden değerlendirme koşulu:** Onaylı destek veya çoklu organization geçiş akışı tasarlandığında.
+
+## D-040 — Session yetkinin doğruluk kaynağı değildir
+
+- **Karar:** Korumalı her istekte User, tenant ve membership durumu yeniden doğrulanır.
+- **Gerekçe:** Pasifleştirme ve süre bitişinin mevcut session üzerinde hemen etkili olması gerekir.
+- **MVP kapsamı:** Inactive/locked user session kapatma ve güncel membership policy sorguları.
+- **Sonraya bırakılan alternatif:** Merkezi session store ve toplu session revocation.
+- **Yeniden değerlendirme koşulu:** Çok cihazlı session yönetimi veya merkezi revocation gerektiğinde.
+
+## D-041 — Tenant dışı kaynak 404, tenant içi yetki eksikliği 403
+
+- **Karar:** Scoped sorguda bulunmayan başka tenant kaynağı 404; aynı tenant'taki yetersiz rol 403 üretir.
+- **Gerekçe:** IDOR denemesinde başka tenant kaynağının varlığını ifşa etmemek.
+- **MVP kapsamı:** Building ve Apartment resource decorator'ları.
+- **Sonraya bırakılan alternatif:** Tüm yetki retlerinde tek tip 404.
+- **Yeniden değerlendirme koşulu:** Güvenlik değerlendirmesi daha sıkı kaynak gizleme isterse.
+
+## D-042 — Login rate limit için geçici memory storage
+
+- **Karar:** Login IP başına `5/minute;30/hour`; development/test ve ilk tek-process kullanımda memory storage.
+- **Gerekçe:** Redis kurmadan temel brute-force azaltımı sağlamak.
+- **MVP kapsamı:** Yapılandırılabilir Flask-Limiter ve genel 429 yanıtı.
+- **Sonraya bırakılan alternatif:** Redis veya başka paylaşımlı rate-limit backend'i.
+- **Yeniden değerlendirme koşulu:** Production birden fazla Gunicorn worker/process ile yayına alınmadan önce.
 
 ## Kodlamadan önce kalan kararlar
 
