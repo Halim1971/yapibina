@@ -46,3 +46,5 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Toplu sorgularla bina özeti, son import durumu ve birleşik finans hareketleri
 - Tenant-scoped arama, allowlist sıralama ve server-side sayfalama kullanan bina listesi
 - Bina bazında daire, aktif resident, açık borç ve aylık tahsilat özetleri
+- Organization admin için tenant-scoped bina detay ve daire özet ekranı
+- Daire/resident araması, aggregate sıralama, sayfalama ve son finans hareketleri

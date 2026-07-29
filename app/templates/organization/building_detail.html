@@ -1,1 +1,99 @@
-{% extends "base.html" %}{% from "components/nav.html" import organization_nav %}{% block navigation %}{{ organization_nav() }}{% endblock %}{% block content %}<section class="panel"><h1>{{ building.name }}</h1><p>{{ building.code }}</p><div class="actions"><a href="{{ url_for('organization.building_edit', building_id=building.id) }}">Düzenle</a><a href="{{ url_for('organization.apartments', building_id=building.id) }}">Daireler</a></div></section>{% endblock %}
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}{{ detail.building.name }}{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide building-detail">
+  <nav class="breadcrumb" aria-label="Sayfa yolu">
+    <a href="{{ url_for('organization.index') }}">Genel Bakış</a><span>/</span>
+    <a href="{{ url_for('organization.buildings') }}">Binalar</a><span>/</span>
+    <span>{{ detail.building.name }}</span>
+  </nav>
+  <header class="section-header">
+    <div><h1>{{ detail.building.name }}</h1><p class="muted">{{ detail.building.address }}</p></div>
+    <a href="{{ url_for('organization.buildings') }}">Binalara Dön</a>
+  </header>
+
+  <div class="dashboard-grid building-summary">
+    <article><span>Durum</span><strong>{{ "Aktif" if detail.building.is_active else "Pasif" }}</strong></article>
+    <article><span>Toplam daire</span><strong>{{ detail.building.apartment_count }}</strong></article>
+    <article><span>Aktif resident</span><strong>{{ detail.building.active_resident_count }}</strong></article>
+    <article><span>Toplam açık borç</span><strong>{{ format_try(detail.building.outstanding_debt) }} ₺</strong></article>
+    <article><span>Bu ay tahakkuk</span><strong>{{ format_try(detail.building.current_month_charges) }} ₺</strong></article>
+    <article><span>Bu ay tahsilat</span><strong>{{ format_try(detail.building.current_month_payments) }} ₺</strong></article>
+    <article><span>Bu ay tahsilat oranı</span><strong>{% if detail.building.collection_rate is not none %}%{{ format_try(detail.building.collection_rate) }}{% else %}—{% endif %}</strong></article>
+    <article><span>Son finansal hareket</span><strong>{% if detail.building.last_financial_movement_date %}{{ detail.building.last_financial_movement_date.strftime("%d.%m.%Y") }}{% else %}Henüz hareket yok{% endif %}</strong></article>
+  </div>
+
+  <section class="dashboard-section">
+    <header class="section-header"><div><h2>Daireler</h2><p class="muted">Toplam {{ detail.apartments.total }} daire</p></div></header>
+    <form method="get" class="building-filters apartment-filters">
+      <div class="field"><label for="apartment-search">Arama</label><input id="apartment-search" name="q" value="{{ detail.apartments.search }}" placeholder="Daire veya resident adı"></div>
+      <div class="field"><label for="apartment-sort">Sıralama</label><select id="apartment-sort" name="sort">
+        <option value="apartment" {% if detail.apartments.sort == "apartment" %}selected{% endif %}>Daire</option>
+        <option value="residents" {% if detail.apartments.sort == "residents" %}selected{% endif %}>Resident sayısı</option>
+        <option value="debt" {% if detail.apartments.sort == "debt" %}selected{% endif %}>Açık borç</option>
+        <option value="charges" {% if detail.apartments.sort == "charges" %}selected{% endif %}>Bu ay tahakkuk</option>
+        <option value="payments" {% if detail.apartments.sort == "payments" %}selected{% endif %}>Bu ay tahsilat</option>
+        <option value="last_payment" {% if detail.apartments.sort == "last_payment" %}selected{% endif %}>Son ödeme</option>
+      </select></div>
+      <div class="field"><label for="apartment-direction">Yön</label><select id="apartment-direction" name="direction">
+        <option value="asc" {% if detail.apartments.direction == "asc" %}selected{% endif %}>Artan</option>
+        <option value="desc" {% if detail.apartments.direction == "desc" %}selected{% endif %}>Azalan</option>
+      </select></div>
+      <div class="field"><label for="apartment-page-size">Sayfa boyutu</label><select id="apartment-page-size" name="per_page">
+        {% for size in (20, 50, 100) %}<option value="{{ size }}" {% if detail.apartments.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+      </select></div>
+      <button class="button button-inline" type="submit">Uygula</button>
+    </form>
+
+    {% if detail.apartments.items %}
+      <div class="table-scroll"><table>
+        <thead><tr><th>Daire</th><th>Resident</th><th>Açık borç</th><th>Bu ay tahakkuk</th><th>Bu ay tahsilat</th><th>Son ödeme</th><th>Durum</th></tr></thead>
+        <tbody>{% for apartment in detail.apartments.items %}<tr>
+          <td><strong>{{ apartment.label }}</strong><br><small>{{ apartment.location }}</small></td>
+          <td>{{ apartment.resident_summary }}{% if apartment.active_resident_count > 1 %}<br><small>{{ apartment.active_resident_count }} aktif resident</small>{% endif %}</td>
+          <td>{{ format_try(apartment.outstanding_debt) }} ₺</td>
+          <td>{{ format_try(apartment.current_month_charges) }} ₺</td>
+          <td>{{ format_try(apartment.current_month_payments) }} ₺</td>
+          <td>{% if apartment.last_payment_date %}{{ apartment.last_payment_date.strftime("%d.%m.%Y") }}<br><small>{{ format_try(apartment.last_payment_amount) }} ₺</small>{% else %}Ödeme yok{% endif %}</td>
+          <td><span class="badge">{{ "Aktif" if apartment.is_active else "Pasif" }}</span></td>
+        </tr>{% endfor %}</tbody>
+      </table></div>
+      {% if detail.apartments.pages > 1 %}
+        <nav class="pagination" aria-label="Daire listesi sayfaları">
+          {% if detail.apartments.has_previous %}
+            <a href="{{ url_for('organization.building_detail', building_id=detail.building.id, page=1, per_page=detail.apartments.per_page, q=detail.apartments.search, sort=detail.apartments.sort, direction=detail.apartments.direction) }}">İlk</a>
+            <a href="{{ url_for('organization.building_detail', building_id=detail.building.id, page=detail.apartments.page - 1, per_page=detail.apartments.per_page, q=detail.apartments.search, sort=detail.apartments.sort, direction=detail.apartments.direction) }}">Önceki</a>
+          {% endif %}
+          <span>Sayfa {{ detail.apartments.page }} / {{ detail.apartments.pages }}</span>
+          {% if detail.apartments.has_next %}
+            <a href="{{ url_for('organization.building_detail', building_id=detail.building.id, page=detail.apartments.page + 1, per_page=detail.apartments.per_page, q=detail.apartments.search, sort=detail.apartments.sort, direction=detail.apartments.direction) }}">Sonraki</a>
+            <a href="{{ url_for('organization.building_detail', building_id=detail.building.id, page=detail.apartments.pages, per_page=detail.apartments.per_page, q=detail.apartments.search, sort=detail.apartments.sort, direction=detail.apartments.direction) }}">Son</a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% elif detail.apartments.search %}
+      <div class="empty-state"><p>Aramanızla eşleşen daire bulunamadı.</p><a href="{{ url_for('organization.building_detail', building_id=detail.building.id) }}">Aramayı temizle</a></div>
+    {% else %}
+      <p class="empty-state">Bu binada henüz daire bulunmuyor.</p>
+    {% endif %}
+  </section>
+
+  <section class="dashboard-section">
+    <h2>Son finansal hareketler</h2>
+    {% if detail.movements %}
+      <div class="movement-list dashboard-movements">
+        <div class="movement-row movement-head"><span>Tarih</span><span>Açıklama</span><span>Daire</span><span>Tür</span><span>Tutar</span></div>
+        {% for movement in detail.movements %}<div class="movement-row">
+          <span data-label="Tarih">{{ movement.movement_date.strftime("%d.%m.%Y") }}</span>
+          <span data-label="Açıklama">{{ movement.description }}</span>
+          <span data-label="Daire">{{ movement.apartment_label }}</span>
+          <span data-label="Tür" class="badge">{{ movement.kind }}</span>
+          <strong data-label="Tutar">{{ format_try(movement.amount) }} ₺</strong>
+        </div>{% endfor %}
+      </div>
+    {% else %}<p class="empty-state">Henüz finansal hareket bulunmuyor.</p>{% endif %}
+  </section>
+</section>
+{% endblock %}

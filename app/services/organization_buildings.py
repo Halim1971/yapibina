@@ -24,7 +24,7 @@ from app.models import (
     UserStatus,
 )
 from app.services import SessionLike
-from app.services.organization_dashboard import (
+from app.services.finance_metrics import (
     local_today,
     money_decimal,
     month_range,

@@ -44,6 +44,9 @@ from app.services.dues_dashboard import (
     get_dues_dashboard,
     list_active_buildings_for_dues,
 )
+from app.services.organization_building_detail import (
+    get_organization_building_detail,
+)
 from app.services.organization_buildings import list_organization_buildings
 from app.services.organization_dashboard import get_organization_dashboard
 from app.services.organization_management import (
@@ -150,8 +153,26 @@ def building_new() -> Any:
 @organization_blueprint.get("/buildings/<uuid:building_id>")
 @organization_admin_required
 def building_detail(building_id: uuid.UUID) -> str:
-    building = require_building(db.session, _organization_id(), building_id)
-    return render_template("organization/building_detail.html", building=building)
+    try:
+        detail = get_organization_building_detail(
+            db.session,
+            organization_id=_organization_id(),
+            building_id=building_id,
+            timezone_name=current_app.config["DEFAULT_TIMEZONE"],
+            search=request.args.get("q", ""),
+            sort=request.args.get("sort", "apartment"),
+            direction=request.args.get("direction", "asc"),
+            page=request.args.get("page", 1, type=int) or 1,
+            per_page=request.args.get(
+                "per_page",
+                current_app.config["MANAGEMENT_PAGE_SIZE"],
+                type=int,
+            )
+            or current_app.config["MANAGEMENT_PAGE_SIZE"],
+        )
+    except ServiceValidationError:
+        abort(404)
+    return render_template("organization/building_detail.html", detail=detail)
 
 
 @organization_blueprint.route("/buildings/<uuid:building_id>/edit", methods=["GET", "POST"])

@@ -48,14 +48,14 @@
         <tbody>
         {% for item in listing.items %}
           <tr>
-            <td>{{ item.name }}</td>
+            <td><a href="{{ url_for('organization.building_detail', building_id=item.id) }}">{{ item.name }}</a></td>
             <td>{{ item.address }}</td>
             <td>{{ item.apartment_count }}</td>
             <td>{{ item.active_resident_count }}</td>
             <td>{{ format_try(item.outstanding_debt) }} ₺</td>
             <td>{{ format_try(item.current_month_payments) }} ₺</td>
             <td><span class="badge">{{ "Aktif" if item.is_active else "Pasif" }}</span></td>
-            <td><a href="{{ url_for('organization.building_detail', building_id=item.id) }}">Görüntüle</a></td>
+            <td><a href="{{ url_for('organization.building_detail', building_id=item.id) }}">Detay</a></td>
           </tr>
         {% endfor %}
         </tbody>

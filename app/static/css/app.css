@@ -264,6 +264,22 @@ td {
   margin: 1rem 0;
 }
 
+.breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem;
+}
+
+.building-summary {
+  margin: 1rem 0 2rem;
+}
+
+.apartment-filters {
+  grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(8rem, 1fr)) auto;
+}
+
 @media (max-width: 42rem) {
   table {
     font-size: 0.9rem;
@@ -307,6 +323,10 @@ td {
   }
 
   .building-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .apartment-filters {
     grid-template-columns: 1fr;
   }
 }

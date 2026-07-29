@@ -215,8 +215,21 @@ toplamı ve bina durumu gösterilir.
 Finansal ve resident metrikleri Genel Bakış ile aynı tanımları kullanır:
 açık borç posted charge'lardan geçerli allocation'ların çıkarılmasıyla,
 aylık tahsilat ise allocation'lardan bağımsız olarak tekil posted payment
-toplamıyla hesaplanır. Bu aşama yeni bina CRUD veya yeni bir bina detay ekranı
-eklemez; mevcut yönetim davranışlarını değiştirmez.
+toplamıyla hesaplanır.
+
+## Organization bina detayı
+
+Organization admin bina listesinden tenant-scoped bina detayına geçebilir.
+Detay ekranı bina özeti, aylık finans metrikleri, son finansal hareketler ve
+daire bazında resident/borç/tahakkuk/tahsilat özetlerini sunar. Daire listesi
+resident veya daire bilgisiyle aranabilir; izin verilen metriklerle sıralanır
+ve 20/50/100 kayıtlık server-side sayfalama kullanır.
+
+Son ödeme, mevcut modelde doğrudan daireye bağlı en yeni posted `Payment`
+kaydıdır. Tahsis edilmemiş ödeme aylık tahsilatta görünür fakat açık borcu
+azaltmaz. Finansal metrikler Genel Bakış ve Bina Listesi ile ortak tarih,
+dönem ve Decimal kurallarını kullanır. Bu aşamada yeni Building CRUD veya
+Apartment Detail davranışı eklenmemiştir.
 
 ## Kimlik doğrulama
 

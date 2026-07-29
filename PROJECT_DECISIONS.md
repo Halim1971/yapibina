@@ -619,6 +619,48 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Import edilen kaynak verinin finans veya
   resident semantiği değişirse ortak read-model kuralları birlikte güncellenir.
 
+## D-064 — Bina detayı tenant-scoped read-model'dir
+
+- **Karar:** Bina detayı `building_id` ile birlikte zorunlu
+  `organization_id` filtresi kullanan, organization admin'e özel bir read-model
+  servisidir.
+- **Gerekçe:** Bina, daire, resident ve finans bilgilerinin UUID üzerinden
+  tenant sınırı dışına sızmasını önlemek ve route/template katmanını hesap
+  mantığından ayırmak.
+- **MVP kapsamı:** Bina özeti, server-side daire arama/sıralama/sayfalama ve son
+  on posted finans hareketi; başka tenant kaynağı için 404.
+- **Sonraya bırakılan alternatif:** Building manager'a atanmış bina kapsamlı
+  görünüm ve ayrı Apartment Detail ekranı.
+- **Yeniden değerlendirme koşulu:** Organization-level permission modeli veya
+  building manager ürün kapsamı genişletildiğinde.
+
+## D-065 — Son ödeme daireye doğrudan bağlı posted payment'tır
+
+- **Karar:** Daire satırındaki son ödeme, `Payment.apartment_id` üzerinden
+  doğrudan bağlı en yeni posted payment; eşit tarihte `created_at` ve UUID ile
+  deterministik seçilen kayıttır.
+- **Gerekçe:** Mevcut model payment'ın bina ve daire ilişkisini doğrudan ve
+  tenant-aware foreign keylerle taşır; allocation üzerinden dolaylı çıkarım
+  gereksiz ve farklı borçlara dağıtımda yanıltıcıdır.
+- **MVP kapsamı:** Tarih ve tutar gösterilir; unallocated kısım son ödeme
+  kaydını değiştirmez ve açık borcu azaltmaz.
+- **Sonraya bırakılan alternatif:** Allocation bazlı “borca uygulanan son
+  ödeme” metriği.
+- **Yeniden değerlendirme koşulu:** Gelecekte bir payment'ın birden fazla
+  apartment'a dağıtılmasına izin veren model kabul edilirse.
+
+## D-066 — Finans tarih ve dönem kuralları ortak helper'da tutulur
+
+- **Karar:** Europe/Istanbul yerel gün/ay sınırı, charge dönem fallback'i ve
+  Decimal normalizasyonu `finance_metrics` modülünde ortaklaştırılır.
+- **Gerekçe:** Dashboard, bina listesi ve bina detayında aynı metriğin farklı
+  yorumlanmasını önlemek.
+- **MVP kapsamı:** Posted charge/payment ve geçerli allocation kullanan
+  read-model sorguları; cache veya projection yoktur.
+- **Sonraya bırakılan alternatif:** Ayrı finans projection servisi.
+- **Yeniden değerlendirme koşulu:** Sorgu hacmi kalıcı özet/projection
+  gerektirdiğinde.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

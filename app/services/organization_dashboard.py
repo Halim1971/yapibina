@@ -7,7 +7,6 @@ from decimal import Decimal
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.sql.elements import ColumnElement
 
 from app.imports.models import ImportRun, ImportRunStatus
 from app.models import (
@@ -24,8 +23,13 @@ from app.models import (
     UserStatus,
 )
 from app.services import SessionLike
-
-MONEY_ZERO = Decimal("0.00")
+from app.services.finance_metrics import (
+    MONEY_ZERO,
+    local_today,
+    money_decimal,
+    month_range,
+    period_charge_filter,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,36 +77,6 @@ class OrganizationDashboard:
     buildings: tuple[BuildingSummary, ...]
     movements: tuple[FinancialMovement, ...]
     period_label: str
-
-
-def money_decimal(value: object) -> Decimal:
-    return Decimal(str(value or 0)).quantize(Decimal("0.01"))
-
-
-def month_range(reference: date) -> tuple[date, date]:
-    start = reference.replace(day=1)
-    if start.month == 12:
-        return start, date(start.year + 1, 1, 1)
-    return start, date(start.year, start.month + 1, 1)
-
-
-def local_today(timezone_name: str) -> date:
-    return datetime.now(timezone.utc).astimezone(ZoneInfo(timezone_name)).date()
-
-
-def _period_charge_filter(start: date, end: date) -> ColumnElement[bool]:
-    return or_(
-        and_(
-            Charge.period_year == start.year,
-            Charge.period_month == start.month,
-        ),
-        and_(
-            Charge.period_year.is_(None),
-            Charge.period_month.is_(None),
-            Charge.due_date >= start,
-            Charge.due_date < end,
-        ),
-    )
 
 
 def _integer_map(rows: list[tuple[uuid.UUID, int]]) -> dict[uuid.UUID, int]:
@@ -469,7 +443,7 @@ def get_organization_dashboard(
             select(func.coalesce(func.sum(Charge.original_amount), 0)).where(
                 Charge.organization_id == organization_id,
                 Charge.status == ChargeStatus.POSTED,
-                _period_charge_filter(month_start, month_end),
+                period_charge_filter(month_start, month_end),
             )
         )
         .scalar_one()
