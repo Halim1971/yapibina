@@ -58,6 +58,9 @@ from app.services.organization_management import (
     update_apartment,
     update_building,
 )
+from app.services.organization_resident_detail import (
+    get_organization_resident_detail,
+)
 from app.services.payments import auto_allocate_payment, record_payment
 from app.services.tenancy import require_apartment, require_building
 from app.services.user_management import (
@@ -219,6 +222,45 @@ def apartment_detail(
     except ServiceValidationError:
         abort(404)
     return render_template("organization/apartment_detail.html", detail=detail)
+
+
+@organization_blueprint.get("/residents/<uuid:resident_id>")
+@organization_admin_required
+def resident_detail(resident_id: uuid.UUID) -> str:
+    page_size = current_app.config["MANAGEMENT_PAGE_SIZE"]
+    selected_apartment_id = request.args.get("apartment_id", type=uuid.UUID)
+    try:
+        detail = get_organization_resident_detail(
+            db.session,
+            organization_id=_organization_id(),
+            resident_id=resident_id,
+            selected_apartment_id=selected_apartment_id,
+            timezone_name=current_app.config["DEFAULT_TIMEZONE"],
+            charge_search=request.args.get("charge_q", ""),
+            charge_sort=request.args.get("charge_sort", "date"),
+            charge_direction=request.args.get("charge_direction", "desc"),
+            charge_page=request.args.get("charge_page", 1, type=int) or 1,
+            charge_per_page=request.args.get(
+                "charge_per_page", page_size, type=int
+            )
+            or page_size,
+            payment_search=request.args.get("payment_q", ""),
+            payment_sort=request.args.get("payment_sort", "date"),
+            payment_direction=request.args.get("payment_direction", "desc"),
+            payment_page=request.args.get("payment_page", 1, type=int) or 1,
+            payment_per_page=request.args.get(
+                "payment_per_page", page_size, type=int
+            )
+            or page_size,
+            movement_page=request.args.get("movement_page", 1, type=int) or 1,
+            movement_per_page=request.args.get(
+                "movement_per_page", page_size, type=int
+            )
+            or page_size,
+        )
+    except ServiceValidationError:
+        abort(404)
+    return render_template("organization/resident_detail.html", detail=detail)
 
 
 @organization_blueprint.route("/buildings/<uuid:building_id>/edit", methods=["GET", "POST"])

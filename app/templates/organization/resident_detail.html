@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}{{ detail.resident.display_name }}{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide apartment-detail resident-detail">
+  <nav class="breadcrumb" aria-label="Sayfa yolu">
+    <a href="{{ url_for('organization.buildings') }}">Binalar</a><span>/</span>
+    {% if detail.selected_placement %}
+      <a href="{{ url_for('organization.building_detail', building_id=detail.selected_placement.building_id) }}">{{ detail.selected_placement.building_name }}</a><span>/</span>
+      <a href="{{ url_for('organization.apartment_detail', building_id=detail.selected_placement.building_id, apartment_id=detail.selected_placement.apartment_id) }}">Daire {{ detail.selected_placement.apartment_label }}</a><span>/</span>
+    {% endif %}
+    <span>{{ detail.resident.display_name }}</span>
+  </nav>
+
+  <header class="section-header">
+    <div>
+      <h1>{{ detail.resident.display_name }}</h1>
+      <p class="muted">Sakin kaydı · {{ "Aktif kullanıcı hesabı" if detail.resident.is_active else "Pasif kullanıcı hesabı" }}</p>
+    </div>
+    <div class="actions">
+      {% if detail.selected_placement %}
+        <a href="{{ url_for('organization.apartment_detail', building_id=detail.selected_placement.building_id, apartment_id=detail.selected_placement.apartment_id) }}">Daire Detayına Dön</a>
+        <a href="{{ url_for('organization.building_detail', building_id=detail.selected_placement.building_id) }}">Bina Detayına Dön</a>
+      {% endif %}
+      <a href="{{ url_for('organization.buildings') }}">Tüm Binalar</a>
+    </div>
+  </header>
+
+  <div class="resident-profile-grid">
+    <article class="dashboard-section">
+      <h2>İletişim Bilgileri</h2>
+      <dl class="detail-list">
+        <div><dt>Ad soyad</dt><dd>{{ detail.resident.display_name }}</dd></div>
+        <div><dt>E-posta</dt><dd>{{ detail.resident.email }}</dd></div>
+        <div><dt>Telefon</dt><dd>{{ detail.resident.phone or "Belirtilmedi" }}</dd></div>
+        <div><dt>Kullanıcı hesabı</dt><dd>{{ "Aktif" if detail.resident.is_active else "Pasif" }}</dd></div>
+      </dl>
+    </article>
+
+    <article class="dashboard-section">
+      <h2>Yerleşim Bilgileri</h2>
+      {% if detail.selected_placement %}
+        {% if detail.placements|length > 1 %}
+          <form method="get" class="history-filters resident-placement-filter">
+            <label for="resident-apartment">Aktif daire</label>
+            <select id="resident-apartment" name="apartment_id">
+              {% for placement in detail.placements %}
+                <option value="{{ placement.apartment_id }}" {% if placement.apartment_id == detail.selected_placement.apartment_id %}selected{% endif %}>{{ placement.building_name }} · Daire {{ placement.apartment_label }}</option>
+              {% endfor %}
+            </select>
+            <button class="button button-inline">Göster</button>
+          </form>
+        {% endif %}
+        <dl class="detail-list">
+          <div><dt>Yönetim</dt><dd>{{ detail.selected_placement.organization_name }}</dd></div>
+          <div><dt>Bina</dt><dd>{{ detail.selected_placement.building_name }}</dd></div>
+          <div><dt>Daire</dt><dd>{{ detail.selected_placement.apartment_label }}</dd></div>
+          {% if detail.selected_placement.block %}<div><dt>Blok</dt><dd>{{ detail.selected_placement.block }}</dd></div>{% endif %}
+          {% if detail.selected_placement.floor %}<div><dt>Kat</dt><dd>{{ detail.selected_placement.floor }}</dd></div>{% endif %}
+          <div><dt>Başlangıç</dt><dd>{{ detail.selected_placement.starts_at.strftime("%d.%m.%Y") }}</dd></div>
+        </dl>
+      {% else %}
+        <p class="empty-state">Aktif daire bağlantısı bulunmuyor.</p>
+      {% endif %}
+    </article>
+  </div>
+
+  {% if detail.apartment_finance %}
+    {% set finance = detail.apartment_finance %}
+    <section class="dashboard-section">
+      <header class="section-header"><div><h2>Bağlı Dairenin Finansal Durumu</h2><p class="muted">{{ finance.identity.building_name }} · Daire {{ finance.identity.label }}</p></div></header>
+      <div class="dashboard-grid apartment-summary">
+        <article><span>Açık Borç</span><strong>{{ format_try(finance.financial.outstanding_debt) }} ₺</strong></article>
+        <article><span>Bu Ay Tahakkuk</span><strong>{{ format_try(finance.financial.current_month_charges) }} ₺</strong></article>
+        <article><span>Bu Ay Tahsilat</span><strong>{{ format_try(finance.financial.current_month_payments) }} ₺</strong></article>
+        <article><span>Tahsilat Oranı</span><strong>{% if finance.financial.collection_rate is not none %}%{{ format_try(finance.financial.collection_rate) }}{% else %}—{% endif %}</strong></article>
+        <article><span>Son Ödeme</span><strong>{% if finance.financial.last_payment_date %}{{ format_try(finance.financial.last_payment_amount) }} ₺<small>{{ finance.financial.last_payment_date.strftime("%d.%m.%Y") }}</small>{% else %}Ödeme yok{% endif %}</strong></article>
+        <article><span>Son Tahakkuk</span><strong>{% if finance.financial.last_charge_date %}{{ finance.financial.last_charge_date.strftime("%d.%m.%Y") }}{% else %}Tahakkuk yok{% endif %}</strong></article>
+        <article><span>Toplam Tahakkuk</span><strong>{{ format_try(finance.financial.total_charges) }} ₺</strong></article>
+        <article><span>Kullanılmamış Ödeme</span><strong>{{ format_try(finance.financial.total_unallocated) }} ₺</strong></article>
+      </div>
+    </section>
+
+    <section class="dashboard-section">
+      <header class="section-header"><h2>Bağlı Dairenin Tahakkukları</h2><span class="muted">{{ finance.charges.total }} kayıt</span></header>
+      <form method="get" class="history-filters">
+        <input type="hidden" name="apartment_id" value="{{ detail.selected_placement.apartment_id }}">
+        <input name="charge_q" value="{{ finance.charges.search }}" placeholder="Açıklama veya tür">
+        <select name="charge_sort"><option value="date" {% if finance.charges.sort == "date" %}selected{% endif %}>Dönem / tarih</option><option value="amount" {% if finance.charges.sort == "amount" %}selected{% endif %}>Tutar</option><option value="outstanding" {% if finance.charges.sort == "outstanding" %}selected{% endif %}>Açık tutar</option><option value="due_date" {% if finance.charges.sort == "due_date" %}selected{% endif %}>Vade tarihi</option></select>
+        <select name="charge_direction"><option value="desc" {% if finance.charges.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if finance.charges.direction == "asc" %}selected{% endif %}>Artan</option></select>
+        <select name="charge_per_page">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if finance.charges.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select>
+        <input type="hidden" name="payment_q" value="{{ finance.payments.search }}"><input type="hidden" name="payment_sort" value="{{ finance.payments.sort }}"><input type="hidden" name="payment_direction" value="{{ finance.payments.direction }}"><input type="hidden" name="payment_page" value="{{ finance.payments.page }}"><input type="hidden" name="payment_per_page" value="{{ finance.payments.per_page }}"><input type="hidden" name="movement_page" value="{{ finance.movements.page }}">
+        <button class="button button-inline">Uygula</button>
+      </form>
+      {% if finance.charges.items %}
+        <div class="table-scroll"><table><thead><tr><th>Dönem</th><th>Açıklama</th><th>Vade</th><th>Tutar</th><th>Ödenen</th><th>Açık</th><th>Durum</th></tr></thead><tbody>
+        {% for item in finance.charges.items %}<tr><td>{{ item.period_label }}</td><td>{{ item.title }}</td><td>{{ item.due_date.strftime("%d.%m.%Y") }}</td><td>{{ format_try(item.amount) }} ₺</td><td>{{ format_try(item.allocated_amount) }} ₺</td><td>{{ format_try(item.outstanding_amount) }} ₺</td><td><span class="badge">{{ item.status_label }}</span></td></tr>{% endfor %}
+        </tbody></table></div>
+        {% if finance.charges.pages > 1 %}<nav class="pagination"><span>Sayfa {{ finance.charges.page }} / {{ finance.charges.pages }}</span>{% if finance.charges.has_previous %}<a href="{{ url_for('organization.resident_detail', resident_id=detail.resident.id, apartment_id=detail.selected_placement.apartment_id, charge_page=finance.charges.page-1, charge_q=finance.charges.search, charge_sort=finance.charges.sort, charge_direction=finance.charges.direction, charge_per_page=finance.charges.per_page, payment_page=finance.payments.page, payment_q=finance.payments.search, payment_sort=finance.payments.sort, payment_direction=finance.payments.direction, payment_per_page=finance.payments.per_page) }}">Önceki</a>{% endif %}{% if finance.charges.has_next %}<a href="{{ url_for('organization.resident_detail', resident_id=detail.resident.id, apartment_id=detail.selected_placement.apartment_id, charge_page=finance.charges.page+1, charge_q=finance.charges.search, charge_sort=finance.charges.sort, charge_direction=finance.charges.direction, charge_per_page=finance.charges.per_page, payment_page=finance.payments.page, payment_q=finance.payments.search, payment_sort=finance.payments.sort, payment_direction=finance.payments.direction, payment_per_page=finance.payments.per_page) }}">Sonraki</a>{% endif %}</nav>{% endif %}
+      {% else %}<p class="empty-state">Bağlı daire için tahakkuk kaydı bulunmuyor.</p>{% endif %}
+    </section>
+
+    <section class="dashboard-section">
+      <header class="section-header"><h2>Bağlı Dairenin Ödemeleri</h2><span class="muted">{{ finance.payments.total }} kayıt</span></header>
+      <form method="get" class="history-filters">
+        <input type="hidden" name="apartment_id" value="{{ detail.selected_placement.apartment_id }}">
+        <input name="payment_q" value="{{ finance.payments.search }}" placeholder="Açıklama, referans veya yöntem">
+        <select name="payment_sort"><option value="date" {% if finance.payments.sort == "date" %}selected{% endif %}>Tarih</option><option value="amount" {% if finance.payments.sort == "amount" %}selected{% endif %}>Tutar</option><option value="allocated" {% if finance.payments.sort == "allocated" %}selected{% endif %}>Uygulanan</option><option value="unallocated" {% if finance.payments.sort == "unallocated" %}selected{% endif %}>Kullanılmamış</option></select>
+        <select name="payment_direction"><option value="desc" {% if finance.payments.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if finance.payments.direction == "asc" %}selected{% endif %}>Artan</option></select>
+        <select name="payment_per_page">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if finance.payments.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select>
+        <input type="hidden" name="charge_q" value="{{ finance.charges.search }}"><input type="hidden" name="charge_sort" value="{{ finance.charges.sort }}"><input type="hidden" name="charge_direction" value="{{ finance.charges.direction }}"><input type="hidden" name="charge_page" value="{{ finance.charges.page }}"><input type="hidden" name="charge_per_page" value="{{ finance.charges.per_page }}"><input type="hidden" name="movement_page" value="{{ finance.movements.page }}">
+        <button class="button button-inline">Uygula</button>
+      </form>
+      {% if finance.payments.items %}
+        <div class="table-scroll"><table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Yöntem</th><th>Tutar</th><th>Uygulanan</th><th>Kullanılmamış</th></tr></thead><tbody>
+        {% for item in finance.payments.items %}<tr><td>{{ item.payment_date.strftime("%d.%m.%Y") }}</td><td>{{ item.note }}</td><td>{{ item.method_label }}</td><td>{{ format_try(item.amount) }} ₺</td><td>{{ format_try(item.allocated_amount) }} ₺</td><td>{{ format_try(item.unallocated_amount) }} ₺</td></tr>{% endfor %}
+        </tbody></table></div>
+        {% if finance.payments.pages > 1 %}<nav class="pagination"><span>Sayfa {{ finance.payments.page }} / {{ finance.payments.pages }}</span>{% if finance.payments.has_previous %}<a href="{{ url_for('organization.resident_detail', resident_id=detail.resident.id, apartment_id=detail.selected_placement.apartment_id, payment_page=finance.payments.page-1, payment_q=finance.payments.search, payment_sort=finance.payments.sort, payment_direction=finance.payments.direction, payment_per_page=finance.payments.per_page, charge_page=finance.charges.page, charge_q=finance.charges.search, charge_sort=finance.charges.sort, charge_direction=finance.charges.direction, charge_per_page=finance.charges.per_page) }}">Önceki</a>{% endif %}{% if finance.payments.has_next %}<a href="{{ url_for('organization.resident_detail', resident_id=detail.resident.id, apartment_id=detail.selected_placement.apartment_id, payment_page=finance.payments.page+1, payment_q=finance.payments.search, payment_sort=finance.payments.sort, payment_direction=finance.payments.direction, payment_per_page=finance.payments.per_page, charge_page=finance.charges.page, charge_q=finance.charges.search, charge_sort=finance.charges.sort, charge_direction=finance.charges.direction, charge_per_page=finance.charges.per_page) }}">Sonraki</a>{% endif %}</nav>{% endif %}
+      {% else %}<p class="empty-state">Bağlı daire için ödeme kaydı bulunmuyor.</p>{% endif %}
+    </section>
+
+    <section class="dashboard-section">
+      <h2>Bağlı Dairenin Bakiye Hareketleri</h2>
+      {% if finance.movements.items %}
+        <div class="table-scroll"><table><thead><tr><th>Tarih</th><th>Tür</th><th>Açıklama</th><th>Borç</th><th>Ödeme</th><th>Bakiye</th></tr></thead><tbody>
+        {% for item in finance.movements.items %}<tr><td>{{ item.occurred_at.strftime("%d.%m.%Y %H:%M") }}</td><td>{{ item.kind }}</td><td>{{ item.description }}</td><td>{{ format_try(item.debit) }} ₺</td><td>{{ format_try(item.credit) }} ₺</td><td>{{ format_try(item.running_balance) }} ₺</td></tr>{% endfor %}
+        </tbody></table></div>
+      {% else %}<p class="empty-state">Bağlı daire için bakiye hareketi bulunmuyor.</p>{% endif %}
+    </section>
+  {% else %}
+    <section class="dashboard-section empty-state">
+      <h2>Bağlı Dairenin Finansal Durumu</h2>
+      <p>Aktif daire bağlantısı bulunmadığı için finansal bilgiler gösterilemiyor.</p>
+    </section>
+  {% endif %}
+</section>
+{% endblock %}

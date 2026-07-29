@@ -6,7 +6,7 @@ from decimal import Decimal
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
-from sqlalchemy import event
+from sqlalchemy import event, select
 
 from app.extensions import db
 from app.models import (
@@ -33,6 +33,9 @@ from app.services.organization_apartment_detail import (
 )
 from app.services.organization_building_detail import (
     get_organization_building_detail,
+)
+from app.services.organization_resident_detail import (
+    get_organization_resident_detail,
 )
 from app.services.payments import auto_allocate_payment, record_payment
 
@@ -809,3 +812,261 @@ def test_apartment_detail_filters_pagination_and_query_budget() -> None:
     finally:
         event.remove(engine, "before_cursor_execute", count_query)
     assert query_count <= 15
+
+
+def test_resident_detail_reuses_apartment_finance_and_supports_placements() -> None:
+    organization, admin = _scope()
+    building = _building(organization, "Resident Detay Binası", "RDT")
+    apartment = _apartment(organization, building, "1")
+    second_apartment = _apartment(organization, building, "2")
+    resident = _resident(
+        organization,
+        apartment,
+        email="resident-read-model@example.com",
+        first_name="Ece",
+        last_name="Sakin",
+    )
+    other_resident = _resident(
+        organization,
+        apartment,
+        email="shared-home@example.com",
+        first_name="Mert",
+        last_name="Sakin",
+    )
+    db.session.add(
+        ApartmentMembership(
+            organization_id=organization.id,
+            apartment_id=second_apartment.id,
+            user_id=resident.id,
+            role=ApartmentMembershipRole.AUTHORIZED_PERSON,
+        )
+    )
+    charge = create_manual_charge(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        charge_type=ChargeType.MONTHLY_DUE,
+        title="Temmuz aidatı",
+        description="Resident detayı finansı",
+        amount="200.00",
+        due_date=date(2026, 7, 10),
+        period_year=2026,
+        period_month=7,
+        created_by_user_id=admin.id,
+    )
+    payment = record_payment(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        amount="125.00",
+        payment_date=date(2026, 7, 12),
+        payment_method=PaymentMethod.BANK_TRANSFER,
+        recorded_by_user_id=admin.id,
+        reference="RESIDENT-PAYMENT",
+    )
+    auto_allocate_payment(
+        db.session,
+        organization_id=organization.id,
+        payment_id=payment.id,
+    )
+    unallocated = record_payment(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        amount="25.00",
+        payment_date=date(2026, 7, 15),
+        payment_method=PaymentMethod.CASH,
+        recorded_by_user_id=admin.id,
+        description="Kullanılmamış resident ödemesi",
+    )
+    db.session.commit()
+
+    detail = get_organization_resident_detail(
+        db.session,
+        organization_id=organization.id,
+        resident_id=resident.id,
+        selected_apartment_id=apartment.id,
+        timezone_name="Europe/Istanbul",
+        charge_search="resident detayı",
+        payment_search="resident-payment",
+    )
+    shared = get_organization_resident_detail(
+        db.session,
+        organization_id=organization.id,
+        resident_id=other_resident.id,
+        timezone_name="Europe/Istanbul",
+    )
+    assert detail.resident.display_name == "Ece Sakin"
+    assert len(detail.placements) == 2
+    assert detail.selected_placement is not None
+    assert detail.selected_placement.apartment_id == apartment.id
+    assert detail.apartment_finance is not None
+    assert detail.apartment_finance.financial.total_charges == Decimal("200.00")
+    assert detail.apartment_finance.financial.total_payments == Decimal("150.00")
+    assert detail.apartment_finance.financial.total_allocated == Decimal("125.00")
+    assert detail.apartment_finance.financial.total_unallocated == Decimal("25.00")
+    assert detail.apartment_finance.financial.outstanding_debt == Decimal("75.00")
+    assert detail.apartment_finance.financial.current_month_charges == Decimal(
+        "200.00"
+    )
+    assert detail.apartment_finance.financial.current_month_payments == Decimal(
+        "150.00"
+    )
+    assert detail.apartment_finance.financial.collection_rate == Decimal("75.00")
+    assert detail.apartment_finance.charges.items[0].id == charge.id
+    assert detail.apartment_finance.payments.items[0].id == payment.id
+    assert (
+        tuple(reversed(detail.apartment_finance.movements.items))[
+            -1
+        ].running_balance
+        == detail.apartment_finance.financial.outstanding_debt
+    )
+    assert all(
+        movement.source_id != unallocated.id
+        for movement in detail.apartment_finance.movements.items
+    )
+    assert shared.apartment_finance is not None
+    assert (
+        shared.apartment_finance.financial.outstanding_debt
+        == detail.apartment_finance.financial.outstanding_debt
+    )
+
+    inactive = _resident(
+        organization,
+        second_apartment,
+        email="inactive-placement@example.com",
+        first_name="Pasif",
+        last_name="Yerleşim",
+    )
+    membership = db.session.scalar(
+        select(ApartmentMembership).where(
+            ApartmentMembership.organization_id == organization.id,
+            ApartmentMembership.user_id == inactive.id,
+        )
+    )
+    assert membership is not None
+    membership.is_active = False
+    membership.ends_at = membership.starts_at
+    db.session.commit()
+    empty = get_organization_resident_detail(
+        db.session,
+        organization_id=organization.id,
+        resident_id=inactive.id,
+        timezone_name="Europe/Istanbul",
+    )
+    assert empty.placements == ()
+    assert empty.apartment_finance is None
+
+    query_count = 0
+
+    def count_query(*_: object) -> None:
+        nonlocal query_count
+        query_count += 1
+
+    engine = db.session.get_bind()
+    event.listen(engine, "before_cursor_execute", count_query)
+    try:
+        get_organization_resident_detail(
+            db.session,
+            organization_id=organization.id,
+            resident_id=resident.id,
+            selected_apartment_id=apartment.id,
+            timezone_name="Europe/Istanbul",
+        )
+    finally:
+        event.remove(engine, "before_cursor_execute", count_query)
+    assert query_count <= 15
+
+
+def test_resident_detail_route_authorization_and_tenant_isolation(
+    client: FlaskClient,
+) -> None:
+    organization, admin = _scope()
+    building = _building(organization, "Resident Route Binası", "RRB")
+    apartment = _apartment(organization, building, "1")
+    resident = _resident(
+        organization,
+        apartment,
+        email="resident-route-target@example.com",
+        first_name="Hedef",
+        last_name="Resident",
+    )
+    member = _user("resident-detail-member@example.com")
+    db.session.add(
+        OrganizationMembership(
+            organization_id=organization.id,
+            user_id=member.id,
+            role=OrganizationMembershipRole.ORGANIZATION_MEMBER,
+        )
+    )
+    db.session.add(
+        ApartmentMembership(
+            organization_id=organization.id,
+            apartment_id=apartment.id,
+            user_id=member.id,
+            role=ApartmentMembershipRole.RESIDENT,
+        )
+    )
+    manager = _user("resident-detail-manager@example.com")
+    db.session.add(
+        OrganizationMembership(
+            organization_id=organization.id,
+            user_id=manager.id,
+            role=OrganizationMembershipRole.ORGANIZATION_MEMBER,
+        )
+    )
+    db.session.add(
+        BuildingMembership(
+            organization_id=organization.id,
+            building_id=building.id,
+            user_id=manager.id,
+            role=BuildingMembershipRole.BUILDING_MANAGER,
+        )
+    )
+    foreign = _organization("resident-foreign", "resident-foreign.example.com")
+    foreign_building = _building(foreign, "Gizli Resident Binası", "GRB")
+    foreign_apartment = _apartment(foreign, foreign_building, "9")
+    foreign_resident = _resident(
+        foreign,
+        foreign_apartment,
+        email="foreign-resident-secret@example.com",
+        first_name="Gizli",
+        last_name="Kişi",
+    )
+    db.session.commit()
+    url = f"/organization/residents/{resident.id}"
+
+    assert client.get(url, headers={"Host": HOST}).status_code == 302
+    _login(client, admin)
+    response = client.get(url, headers={"Host": HOST})
+    assert response.status_code == 200
+    assert b"Hedef Resident" in response.data
+    assert b"Resident Detay\xc4\xb1" in client.get(
+        f"/organization/buildings/{building.id}/apartments/{apartment.id}",
+        headers={"Host": HOST},
+    ).data
+    assert (
+        client.get(
+            f"/organization/residents/{foreign_resident.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(
+            f"{url}?apartment_id={foreign_apartment.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
+    assert b"foreign-resident-secret" not in response.data
+    assert "Gizli Resident Binası".encode() not in response.data
+    assert client.get(url, headers={"Host": "test.local"}).status_code == 403
+
+    for denied_user in (member, manager, resident):
+        client.post("/auth/logout", headers={"Host": HOST})
+        _login(client, denied_user)
+        assert client.get(url, headers={"Host": HOST}).status_code == 403

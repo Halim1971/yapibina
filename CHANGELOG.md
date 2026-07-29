@@ -50,3 +50,5 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Daire/resident araması, aggregate sıralama, sayfalama ve son finans hareketleri
 - Organization admin için tenant-scoped, salt-okunur Apartment Detail ekranı
 - Tahakkuk/ödeme geçmişleri ve allocation temelli deterministik bakiye hareketleri
+- Organization admin için tenant-scoped Resident Detail, çoklu aktif daire
+  seçimi ve apartment finans read-model’inin yeniden kullanımı

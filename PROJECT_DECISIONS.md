@@ -748,6 +748,26 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Standart veri sözleşmesi güvenilir
   allocation efektif tarihi sağlamaya başladığında.
 
+## D-073 — Resident kaydı User ve tenant üyelikleriyle temsil edilir
+
+- **Karar:** Mevcut domainde ayrı bir Resident tablosu yoktur. Sakin kimliği
+  global `User`, tenant bağı `OrganizationMembership`, güncel daire yerleşimi
+  `ApartmentMembership` ile temsil edilir. Bir user birden fazla aktif apartment
+  üyeliğine sahip olabilir; Resident Detail bunları ayrı yerleşimler olarak
+  gösterir.
+- **Finansal sınır:** Borç ve ödeme resident'a değil apartment'a aittir. Aynı
+  apartment'taki sakinler aynı apartment finans görünümünü paylaşır; ayrı veya
+  çoğaltılmış resident borcu üretilmez.
+- **Kaynak sahipliği:** Normal ürün akışında Building, Apartment ve sakin ana
+  kayıtları dış kaynak sistemden importer ile gelir ve organization kullanıcıları
+  için salt okunur kabul edilir. Apsiyon kaynak sistem/source of truth olarak
+  kalır. Yerel düzeltme alanları gerekirse overwrite ve ownership kuralları ayrıca
+  tasarlanacaktır.
+- **Sunum bağımsızlığı:** Resident Detail, Apartment Detail typed read-model
+  servisini composition ile kullanır. Web route'u yalnız tenant bağlamını ve
+  kullanıcı girdilerini aktarır; aynı servis gelecekte mobil/API taşıma katmanından
+  da çağrılabilir.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

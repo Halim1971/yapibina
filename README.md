@@ -245,6 +245,21 @@ azaltmaz. Bakiye hareketinde charge borcu artırır; allocation timezone-aware
 allowlist sıralama ve 20/50/100 kayıtlık server-side pagination kullanır.
 Apartment CRUD, ödeme/tahakkuk değiştirme veya JSON API bu kapsamda yoktur.
 
+## Organization resident detayı
+
+Organization admin, daire detayındaki aktif sakinlerden salt-okunur Resident
+Detail ekranına geçebilir. Mevcut domainde ayrı Resident tablosu yoktur: sakin
+kimliği `User`, tenant bağı `OrganizationMembership`, aktif yerleşimler
+`ApartmentMembership` ile temsil edilir. Bir kullanıcı birden fazla aktif
+daireye bağlıysa finans görünümü daire bazında ayrı seçilir.
+
+Finans resident'a değil apartment'a aittir. Aynı dairedeki sakinler aynı
+“Bağlı Dairenin Finansal Durumu” görünümünü paylaşır; ayrı resident borcu
+üretilmez. Bu görünüm Apartment Detail typed read-model servisini composition
+ile kullanır ve aynı Decimal, allocation, arama, sıralama ve pagination
+kurallarını korur. Building, Apartment ve sakin ana kayıtları normal akışta
+importer kaynaklı ve salt okunurdur; manuel CRUD bu kapsamda bulunmaz.
+
 ## Kimlik doğrulama
 
 Giriş yalnız kullanıcının yetkili olduğu host üzerinde çalışır:

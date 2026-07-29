@@ -303,6 +303,38 @@ td {
   border-radius: 0.6rem;
 }
 
+.resident-profile-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+}
+
+.detail-list div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.detail-list dt {
+  color: #5b6864;
+  font-size: 0.85rem;
+}
+
+.detail-list dd {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .resident-profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .history-filters {
   display: grid;
   grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(7rem, 1fr)) auto;

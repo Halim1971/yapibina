@@ -41,6 +41,7 @@
           <span>{{ resident.email }}</span>
           <span>{{ resident.phone or "Telefon belirtilmedi" }}</span>
           <small>Başlangıç: {{ resident.starts_at.strftime("%d.%m.%Y") }}</small>
+          <a href="{{ url_for('organization.resident_detail', resident_id=resident.id, apartment_id=detail.identity.id) }}">Resident Detayı</a>
         </article>
       {% endfor %}
       </div>

@@ -8,7 +8,7 @@ from decimal import Decimal
 from typing import Generic, TypeVar
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import String, and_, cast, func, or_, select
+from sqlalchemy import String, and_, case, cast, func, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.selectable import Subquery
 
@@ -337,24 +337,54 @@ def _financial_summary(
     month_start: date,
     month_end: date,
 ) -> ApartmentFinancialSummary:
-    total_charges = money_decimal(
-        session.scalar(
-            select(func.coalesce(func.sum(Charge.original_amount), 0)).where(
-                Charge.organization_id == organization_id,
-                Charge.apartment_id == apartment_id,
-                Charge.status == ChargeStatus.POSTED,
-            )
+    charge_totals = session.execute(
+        select(
+            func.coalesce(func.sum(Charge.original_amount), 0).label("total"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            period_charge_filter(month_start, month_end),
+                            Charge.original_amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("current"),
+            func.max(Charge.due_date).label("last_date"),
+        ).where(
+            Charge.organization_id == organization_id,
+            Charge.apartment_id == apartment_id,
+            Charge.status == ChargeStatus.POSTED,
         )
-    )
-    total_payments = money_decimal(
-        session.scalar(
-            select(func.coalesce(func.sum(Payment.amount), 0)).where(
-                Payment.organization_id == organization_id,
-                Payment.apartment_id == apartment_id,
-                Payment.status == PaymentStatus.POSTED,
-            )
+    ).one()
+    payment_totals = session.execute(
+        select(
+            func.coalesce(func.sum(Payment.amount), 0).label("total"),
+            func.coalesce(
+                func.sum(
+                    case(
+                        (
+                            and_(
+                                Payment.payment_date >= month_start,
+                                Payment.payment_date < month_end,
+                            ),
+                            Payment.amount,
+                        ),
+                        else_=0,
+                    )
+                ),
+                0,
+            ).label("current"),
+        ).where(
+            Payment.organization_id == organization_id,
+            Payment.apartment_id == apartment_id,
+            Payment.status == PaymentStatus.POSTED,
         )
-    )
+    ).one()
+    total_charges = money_decimal(charge_totals.total)
+    total_payments = money_decimal(payment_totals.total)
     total_allocated = money_decimal(
         session.scalar(
             select(func.coalesce(func.sum(PaymentAllocation.amount), 0))
@@ -379,34 +409,8 @@ def _financial_summary(
             .where(PaymentAllocation.organization_id == organization_id)
         )
     )
-    current_charges = money_decimal(
-        session.scalar(
-            select(func.coalesce(func.sum(Charge.original_amount), 0)).where(
-                Charge.organization_id == organization_id,
-                Charge.apartment_id == apartment_id,
-                Charge.status == ChargeStatus.POSTED,
-                period_charge_filter(month_start, month_end),
-            )
-        )
-    )
-    current_payments = money_decimal(
-        session.scalar(
-            select(func.coalesce(func.sum(Payment.amount), 0)).where(
-                Payment.organization_id == organization_id,
-                Payment.apartment_id == apartment_id,
-                Payment.status == PaymentStatus.POSTED,
-                Payment.payment_date >= month_start,
-                Payment.payment_date < month_end,
-            )
-        )
-    )
-    last_charge_date = session.scalar(
-        select(func.max(Charge.due_date)).where(
-            Charge.organization_id == organization_id,
-            Charge.apartment_id == apartment_id,
-            Charge.status == ChargeStatus.POSTED,
-        )
-    )
+    current_charges = money_decimal(charge_totals.current)
+    current_payments = money_decimal(payment_totals.current)
     last_payment = session.execute(
         select(Payment.payment_date, Payment.amount)
         .where(
@@ -432,7 +436,7 @@ def _financial_summary(
             if current_charges > MONEY_ZERO
             else None
         ),
-        last_charge_date=last_charge_date,
+        last_charge_date=charge_totals.last_date,
         last_payment_date=last_payment.payment_date if last_payment else None,
         last_payment_amount=money_decimal(last_payment.amount) if last_payment else None,
         total_charges=total_charges,
@@ -747,6 +751,7 @@ def get_organization_apartment_detail(
     movement_page: int = 1,
     movement_per_page: int = 20,
     reference_date: date | None = None,
+    include_residents: bool = True,
 ) -> OrganizationApartmentDetail:
     identity = _identity(
         session,
@@ -759,12 +764,16 @@ def get_organization_apartment_detail(
     now = datetime.now(timezone.utc)
     return OrganizationApartmentDetail(
         identity=identity,
-        residents=_residents(
-            session,
-            organization_id=organization_id,
-            apartment_id=apartment_id,
-            now=now,
-            timezone_name=timezone_name,
+        residents=(
+            _residents(
+                session,
+                organization_id=organization_id,
+                apartment_id=apartment_id,
+                now=now,
+                timezone_name=timezone_name,
+            )
+            if include_residents
+            else ()
         ),
         financial=_financial_summary(
             session,
