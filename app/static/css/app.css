@@ -291,3 +291,132 @@ td {
     font-size: 0.8rem;
   }
 }
+
+.resident-page {
+  max-width: 68rem;
+}
+
+.resident-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.9rem;
+  margin: 1.5rem 0;
+}
+
+.resident-summary article {
+  display: grid;
+  gap: 0.45rem;
+  padding: 1.1rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.resident-summary strong {
+  color: var(--color-primary);
+  font-size: clamp(1.35rem, 4vw, 2rem);
+}
+
+.resident-summary .debt-card {
+  border-left: 0.35rem solid #b56b54;
+}
+
+.resident-summary .debt-clear {
+  border-left-color: #56846a;
+}
+
+.resident-summary .unused-payment {
+  border-left: 0.35rem solid #5b7f91;
+}
+
+.resident-apartment-picker {
+  display: flex;
+  gap: 0.75rem;
+  align-items: end;
+  max-width: 30rem;
+  margin: 1rem 0;
+}
+
+.resident-apartment-picker label {
+  font-weight: 700;
+}
+
+.resident-sections {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.resident-list-row,
+.payment-card {
+  display: grid;
+  grid-template-columns: 7rem 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--color-secondary);
+}
+
+.payment-card {
+  grid-template-columns: 1fr auto;
+}
+
+.payment-card div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.payment-card p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.statement-row {
+  display: grid;
+  grid-template-columns: 7rem 2fr repeat(3, minmax(7rem, 1fr));
+  gap: 0.75rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--color-secondary);
+}
+
+.statement-head {
+  font-weight: 700;
+}
+
+.empty-state {
+  padding: 1rem;
+  border-radius: 0.6rem;
+  background: var(--color-surface);
+}
+
+@media (max-width: 48rem) {
+  .resident-summary,
+  .resident-sections {
+    grid-template-columns: 1fr;
+  }
+
+  .resident-apartment-picker {
+    display: grid;
+  }
+
+  .statement-head {
+    display: none;
+  }
+
+  .statement-row {
+    grid-template-columns: 1fr 1fr;
+    padding: 1rem;
+    margin: 0.75rem 0;
+    border: 1px solid var(--color-secondary);
+    border-radius: 0.6rem;
+  }
+
+  .statement-row span::before,
+  .statement-row strong::before {
+    display: block;
+    content: attr(data-label);
+    color: #526767;
+    font-size: 0.8rem;
+    font-weight: 400;
+  }
+}

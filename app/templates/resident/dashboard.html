@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import resident_nav %}
+{% block title %}Dairem{% endblock %}
+{% block navigation %}{{ resident_nav(dashboard.apartment.id if dashboard.apartment else none) }}{% endblock %}
+{% block content %}
+<section class="panel wide resident-page">
+  <header class="section-header">
+    <div>
+      <h1>Dairem</h1>
+      {% if dashboard.apartment %}
+        <p>{{ dashboard.apartment.building_name }} · Daire {{ dashboard.apartment.apartment_label }}
+          {% if dashboard.apartment.block %}· Blok {{ dashboard.apartment.block }}{% endif %}
+          {% if dashboard.apartment.floor %}· Kat {{ dashboard.apartment.floor }}{% endif %}
+        </p>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if not dashboard.apartment %}
+    <div class="empty-state">Henüz hesabınıza bağlı aktif bir daire bulunmuyor.</div>
+  {% else %}
+    {% if dashboard.apartments|length > 1 %}
+      <form method="get" class="resident-apartment-picker">
+        <label for="apartment_id">Daire seçin</label>
+        <select id="apartment_id" name="apartment_id" onchange="this.form.submit()">
+          {% for apartment in dashboard.apartments %}
+            <option value="{{ apartment.id }}" {% if apartment.id == dashboard.apartment.id %}selected{% endif %}>
+              {{ apartment.building_name }} · {{ apartment.apartment_label }}
+            </option>
+          {% endfor %}
+        </select>
+        <noscript><button type="submit">Göster</button></noscript>
+      </form>
+    {% endif %}
+
+    <div class="resident-summary">
+      <article class="debt-card {% if dashboard.current_debt == 0 %}debt-clear{% endif %}">
+        <span>Borcum</span>
+        {% if dashboard.current_debt > 0 %}
+          <strong>{{ format_try(dashboard.current_debt) }}</strong>
+          <small>Kalan borç</small>
+        {% else %}
+          <strong>{{ format_try(dashboard.current_debt) }}</strong>
+          <small>Borcunuz bulunmuyor.</small>
+        {% endif %}
+      </article>
+      <article>
+        <span>Son ödeme</span>
+        <strong>{{ format_try(dashboard.latest_payment.amount) if dashboard.latest_payment else "—" }}</strong>
+        <small>{{ dashboard.latest_payment.payment_date.strftime("%d.%m.%Y") if dashboard.latest_payment else "Henüz ödeme yok" }}</small>
+      </article>
+      <article>
+        <span>Toplam ödeme</span>
+        <strong>{{ format_try(dashboard.total_payments) }}</strong>
+      </article>
+      {% if dashboard.unallocated_payment > 0 %}
+        <article class="unused-payment">
+          <span>Kullanılmamış ödeme</span>
+          <strong>{{ format_try(dashboard.unallocated_payment) }}</strong>
+          <small>Henüz bir borca uygulanmamış ödeme tutarıdır.</small>
+        </article>
+      {% endif %}
+    </div>
+
+    <div class="resident-sections">
+      <section>
+        <div class="section-header">
+          <h2>Ödemelerim</h2>
+          <a href="{{ url_for('resident.payments', apartment_id=dashboard.apartment.id) }}">Tümünü gör</a>
+        </div>
+        {% for payment in dashboard.recent_payments %}
+          <div class="resident-list-row">
+            <span>{{ payment.payment_date.strftime("%d.%m.%Y") }}</span>
+            <span>{{ payment.method_label }}</span>
+            <strong>{{ format_try(payment.amount) }}</strong>
+          </div>
+        {% else %}
+          <p class="empty-state">Henüz kayıtlı bir ödemeniz bulunmuyor.</p>
+        {% endfor %}
+      </section>
+
+      <section>
+        <div class="section-header">
+          <h2>Hesap hareketlerim</h2>
+          <a href="{{ url_for('resident.account', apartment_id=dashboard.apartment.id) }}">Tümünü gör</a>
+        </div>
+        {% for movement in dashboard.recent_transactions %}
+          <div class="resident-list-row">
+            <span>{{ movement.occurred_on.strftime("%d.%m.%Y") }}</span>
+            <span>{{ movement.description }}</span>
+            <strong>{{ format_try(movement.running_balance) }}</strong>
+          </div>
+        {% else %}
+          <p class="empty-state">Henüz hesap hareketiniz bulunmuyor.</p>
+        {% endfor %}
+      </section>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

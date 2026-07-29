@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import resident_nav %}
+{% block title %}Ödemelerim{% endblock %}
+{% block navigation %}{{ resident_nav(selected.id if selected else none) }}{% endblock %}
+{% block content %}
+<section class="panel wide resident-page">
+  <h1>Ödemelerim</h1>
+  {% if not selected %}
+    <div class="empty-state">Henüz hesabınıza bağlı aktif bir daire bulunmuyor.</div>
+  {% else %}
+    <p>{{ selected.building_name }} · Daire {{ selected.apartment_label }}</p>
+    {% for payment in payment_page.items %}
+      <article class="payment-card">
+        <div><strong>{{ format_try(payment.amount) }}</strong><span>{{ payment.method_label }}</span></div>
+        <time>{{ payment.payment_date.strftime("%d.%m.%Y") }}</time>
+        {% if payment.note %}<p>{{ payment.note }}</p>{% endif %}
+      </article>
+    {% else %}
+      <p class="empty-state">Henüz kayıtlı bir ödemeniz bulunmuyor.</p>
+    {% endfor %}
+    {% if payment_page.pages > 1 %}
+      <nav class="pagination" aria-label="Sayfalar">
+        {% if payment_page.page > 1 %}<a href="{{ url_for('resident.payments', apartment_id=selected.id, page=payment_page.page - 1) }}">Önceki</a>{% endif %}
+        <span>{{ payment_page.page }} / {{ payment_page.pages }}</span>
+        {% if payment_page.page < payment_page.pages %}<a href="{{ url_for('resident.payments', apartment_id=selected.id, page=payment_page.page + 1) }}">Sonraki</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

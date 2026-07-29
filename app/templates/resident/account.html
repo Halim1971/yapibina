@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import resident_nav %}
+{% block title %}Hesap hareketlerim{% endblock %}
+{% block navigation %}{{ resident_nav(selected.id if selected else none) }}{% endblock %}
+{% block content %}
+<section class="panel wide resident-page">
+  <h1>Hesap hareketlerim</h1>
+  {% if not selected %}
+    <div class="empty-state">Henüz hesabınıza bağlı aktif bir daire bulunmuyor.</div>
+  {% else %}
+    {% if apartments|length > 1 %}
+      <form method="get" class="resident-apartment-picker">
+        <label for="apartment_id">Daire seçin</label>
+        <select id="apartment_id" name="apartment_id" onchange="this.form.submit()">
+          {% for apartment in apartments %}
+            <option value="{{ apartment.id }}" {% if apartment.id == selected.id %}selected{% endif %}>{{ apartment.building_name }} · {{ apartment.apartment_label }}</option>
+          {% endfor %}
+        </select>
+        <noscript><button type="submit">Göster</button></noscript>
+      </form>
+    {% endif %}
+    <p>{{ selected.building_name }} · Daire {{ selected.apartment_label }}</p>
+    <div class="resident-statement">
+      <div class="statement-row statement-head">
+        <span>Tarih</span><span>Açıklama</span><span>Borç</span><span>Ödeme</span><span>Kalan bakiye</span>
+      </div>
+      {% for movement in statement.items %}
+        <div class="statement-row">
+          <span data-label="Tarih">{{ movement.occurred_on.strftime("%d.%m.%Y") }}</span>
+          <span data-label="Açıklama">{{ movement.description }}</span>
+          <span data-label="Borç">{{ format_try(movement.debt_amount) if movement.debt_amount else "—" }}</span>
+          <span data-label="Ödeme">{{ format_try(movement.payment_amount) if movement.payment_amount else "—" }}</span>
+          <strong data-label="Kalan bakiye">{{ format_try(movement.running_balance) }}</strong>
+        </div>
+      {% else %}
+        <p class="empty-state">Henüz hesap hareketiniz bulunmuyor.</p>
+      {% endfor %}
+    </div>
+    {% if statement.pages > 1 %}
+      <nav class="pagination" aria-label="Sayfalar">
+        {% if statement.page > 1 %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page - 1) }}">Önceki</a>{% endif %}
+        <span>{{ statement.page }} / {{ statement.pages }}</span>
+        {% if statement.page < statement.pages %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page + 1) }}">Sonraki</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% endif %}
+</section>
+{% endblock %}

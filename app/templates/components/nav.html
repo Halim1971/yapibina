@@ -8,3 +8,10 @@
     <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}
+{% macro resident_nav(apartment_id=None) %}
+  <nav class="nav resident-nav">
+    <a href="{{ url_for('resident.index', apartment_id=apartment_id) }}">Dairem</a>
+    <a href="{{ url_for('resident.account', apartment_id=apartment_id) }}">Hesap hareketleri</a>
+    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
+  </nav>
+{% endmacro %}

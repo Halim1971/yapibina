@@ -417,6 +417,34 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Yük testi yüksek contention ya da birden
   fazla yazma kaynağı gösterirse.
 
+## D-049 — Resident finans görünümü read-only ve membership scoped'dur
+
+- **Karar:** Resident finans route'ları yalnız aktif organization üyeliği ve
+  dönemsel olarak geçerli ApartmentMembership ile erişilen aktif daire/bina
+  kayıtlarını gösterir; hiçbir resident mutation route'u bulunmaz.
+- **Gerekçe:** Daire geçmişini veya başka tenant verisini IDOR yoluyla ifşa
+  etmeden resident deneyimini minimum ve güvenilir tutmak.
+- **MVP kapsamı:** Çoklu daire seçimi, güncel borç, son ödemeler, hesap
+  hareketleri ve kullanıcı dostu boş durum.
+- **Sonraya bırakılan alternatif:** Geçmiş üyelik erişim politikası, resident
+  ödeme işlemi, gider, duyuru ve belge ekranları.
+- **Yeniden değerlendirme koşulu:** Hukuki geçmiş erişim veya online ödeme
+  gereksinimi kesinleşirse.
+
+## D-050 — Kullanılmamış ödeme borçtan ayrı gösterilir
+
+- **Karar:** Güncel borç yalnız posted borçlar ile bunlara bağlı geçerli
+  allocation'lardan hesaplanır. Henüz dağıtılmamış ödeme ayrı bilgi olarak
+  gösterilir ve running debt balance değerini azaltmaz.
+- **Gerekçe:** Yönetici mahsup yapmadan resident'a gerçekte kapanmamış borcu
+  kapalı veya düşük göstermemek.
+- **MVP kapsamı:** Payment hareketi ekstrede yalnız borçlara uygulanan kısmı
+  kadar bakiye etkisi oluşturur; teknik allocation satırları gizlidir.
+- **Sonraya bırakılan alternatif:** Resident'a mahsup detayı veya net
+  alacak/borç görünümü sunmak.
+- **Yeniden değerlendirme koşulu:** Ürün politikası kullanılmamış ödemenin
+  otomatik mahsup edilmesini veya resident onayıyla dağıtılmasını gerektirirse.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

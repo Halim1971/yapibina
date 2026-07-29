@@ -13,7 +13,6 @@ from app.auth.policies import (
     can_access_building,
     can_access_platform,
     effective_organization_membership,
-    has_resident_access,
     is_active_user,
     scoped_apartment,
     scoped_building,
@@ -171,12 +170,19 @@ def resident_required(view: Callable[P, R]) -> Callable[P, R]:
         if user is None:
             return cast(R, _login_redirect())
         organization_id = _tenant_organization_id()
-        if organization_id is None or not has_resident_access(
+        if organization_id is None or user.is_platform_super_admin:
+            abort(403)
+        membership = effective_organization_membership(
             db.session,
             user_id=user.id,
             organization_id=organization_id,
+        )
+        if (
+            membership is None
+            or membership.role is not OrganizationMembershipRole.ORGANIZATION_MEMBER
         ):
             abort(403)
+        g.organization_membership = membership
         return view(*args, **kwargs)
 
     return wrapped

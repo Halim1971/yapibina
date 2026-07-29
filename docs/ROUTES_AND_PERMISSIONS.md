@@ -124,21 +124,25 @@ Finansal POST işlemlerinde idempotency/yeniden gönderim koruması ve audit zor
 
 ## 8. Resident
 
-Aktif apartment membership ve hedef kaynağın aynı daire/bina kapsamında olması gerekir.
+Uygulanan resident finans route'ları salt okunur ve tenant hostname gerektirir:
 
-| Yöntem ve route | Amaç |
+| Route | İşlev |
 |---|---|
-| `GET /` | Sade resident ana sayfası |
-| `GET /apartments` | Birden çok bağlı daire seçimi |
-| `GET /apartments/<apartment_id>/statement` | Ekstrem |
-| `GET /buildings/<building_id>/bank` | Banka hareketleri |
-| `GET /buildings/<building_id>/expenses` | Görünür giderler |
-| `GET /buildings/<building_id>/announcements` | Duyurular |
-| `GET /announcements/<announcement_id>` | Duyuru detayı |
-| `POST /announcements/<announcement_id>/read` | Okundu kaydı |
-| `GET /documents/<document_id>/download` | Yetkili belge indirme |
+| `GET /resident/` | Borç, son ödeme, kullanılmamış ödeme ve son hareket özeti |
+| `GET /resident/account` | Eskiden yeniye hesap hareketleri ve running balance |
+| `GET /resident/payments` | Geçerli ödeme geçmişi |
+| `GET /resident/transactions` | Hesap hareketlerine uyumluluk yönlendirmesi |
 
-Resident'a genel kullanıcı/ayar/rapor menüleri gösterilmez.
+Seçim gerekiyorsa `apartment_id` query parametresi yalnız aktif
+ApartmentMembership kapsamındaki dairelerle doğrulanır. Aktif organization
+membership, user, building ve apartment koşulları da zorunludur. Organization
+admin, building manager veya platform admin rolü kendiliğinden resident erişimi
+vermez. Tenant dışı ya da bağlı olunmayan daire 404 üretir.
+
+Resident navigasyonu yalnız Dairem, Hesap hareketleri ve Çıkış seçeneklerini
+gösterir. Allocation satırları arayüzde gösterilmez; kullanılmamış ödeme ayrı
+sunulur ve borçtan otomatik düşülmez. Gider, duyuru, banka, belge ve online
+ödeme ekranları henüz uygulanmamıştır.
 
 ## 9. Yetki matrisi
 
@@ -237,5 +241,5 @@ korumasındadır.
 Aidat ekranındaki tahsilat yalnız seçili dönem borçlarına bağlı geçerli ödeme
 dağıtımlarından hesaplanır. Önceki dönem borcu varsa otomatik mahsup önce o
 borca gider ve ödeme tutarının tamamı seçili dönem tahsilatı gibi gösterilmez.
-Arayüz teknik finans model adlarını göstermez. Resident finans rotaları, gider
-ve banka modülleri henüz uygulanmamıştır.
+Arayüz teknik finans model adlarını göstermez. Resident gider ve banka
+modülleri henüz uygulanmamıştır.

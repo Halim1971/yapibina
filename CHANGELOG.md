@@ -31,3 +31,6 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Organization admin için bina/dönem filtreli aidat takip ekranı
 - Aktif dairelere tek akışta toplu aidat oluşturma ve PRG tabanlı ödeme girişi
 - Seçili dönem allocation'larından hesaplanan tahsilat ve sade daire finans detayı
+- Aktif daire üyeliğiyle sınırlı read-only resident finans ekranları
+- Resident güncel borç, son ödemeler, hesap ekstresi ve ayrı kullanılmamış ödeme özeti
+- Çoklu daire seçimi, running balance ve resident finans pagination desteği

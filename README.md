@@ -130,7 +130,18 @@ seçili dönemin tahsilatı, yalnız o dönemin borçlarına gerçekten dağıt�
 ödeme tutarıdır; girilen ödemenin tamamı seçili aya yansımayabilir.
 
 Arayüzde teknik model adları yerine aidat, borç, ödeme ve kalan dili kullanılır.
-Resident finans ekranı henüz bulunmaz.
+
+## Resident finans görünümü
+
+Resident, tenant hostname üzerinde yalnız aktif organization üyeliği ve aktif
+ApartmentMembership ile bağlı olduğu aktif daireleri görebilir. `/resident/`
+ekranı güncel borcu, son ödemeleri, son hesap hareketlerini ve varsa henüz bir
+borca uygulanmamış ödeme tutarını gösterir. Birden fazla daire bağlantısı varsa
+yalnız izinli dairelerden seçim yapılabilir.
+
+Resident ekranları salt okunurdur. Hesap ekstresinde teknik ödeme dağıtım
+satırları gösterilmez; ödeme yalnız borçlara uygulanan kısmı kadar running
+balance değerini azaltır. Kullanılmamış ödeme güncel borçtan otomatik düşülmez.
 
 ## Kalite kontrolleri
 
@@ -180,7 +191,8 @@ migrations/         Alembic migration ortamı ve ilk tenant şeması
 
 Bu aşamada banka hareketi, gider, belge, duyuru, audit, notification ve
 subscription modelleri yoktur. Kayıt, parola
-sıfırlama, e-posta daveti/doğrulaması, MFA, resident dashboard ekranları,
+sıfırlama, e-posta daveti/doğrulaması, MFA, resident gider/duyuru ekranları,
+online ödeme,
 dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
 Docker ve background job altyapısı oluşturulmamıştır.
 
