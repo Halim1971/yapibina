@@ -28,6 +28,9 @@ from app.models import (
     User,
 )
 from app.services.charges import create_manual_charge
+from app.services.organization_apartment_detail import (
+    get_organization_apartment_detail,
+)
 from app.services.organization_building_detail import (
     get_organization_building_detail,
 )
@@ -527,3 +530,282 @@ def test_building_detail_zero_charge_rate_and_negative_debt_clamp() -> None:
     assert detail.building.outstanding_debt == Decimal("0.00")
     assert detail.apartments.items[0].outstanding_debt == Decimal("0.00")
     assert detail.apartments.items[0].last_payment_amount == payment.amount
+
+
+def test_apartment_detail_financial_semantics_and_running_balance() -> None:
+    organization, admin = _scope()
+    building = _building(organization, "Daire Detay Binası", "DD")
+    apartment = _apartment(organization, building, "1")
+    _resident(
+        organization,
+        apartment,
+        email="resident-detail@example.com",
+        first_name="Deniz",
+        last_name="Yalın",
+    )
+    old_charge = create_manual_charge(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        charge_type=ChargeType.MANUAL,
+        title="Haziran borcu",
+        description="Önceki dönem",
+        amount="100.00",
+        due_date=date(2026, 6, 10),
+        created_by_user_id=admin.id,
+    )
+    current_charge = create_manual_charge(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        charge_type=ChargeType.MONTHLY_DUE,
+        title="Temmuz aidatı",
+        description=None,
+        amount="200.00",
+        due_date=date(2026, 8, 1),
+        period_year=2026,
+        period_month=7,
+        created_by_user_id=admin.id,
+    )
+    first_payment = record_payment(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        amount="150.00",
+        payment_date=date(2026, 7, 5),
+        payment_method=PaymentMethod.BANK_TRANSFER,
+        recorded_by_user_id=admin.id,
+        reference="REF-1",
+    )
+    allocations = auto_allocate_payment(
+        db.session,
+        organization_id=organization.id,
+        payment_id=first_payment.id,
+    )
+    unallocated = record_payment(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        amount="75.00",
+        payment_date=date(2026, 7, 20),
+        payment_method=PaymentMethod.CASH,
+        recorded_by_user_id=admin.id,
+        description="Kullanılmamış ödeme",
+    )
+    db.session.commit()
+
+    detail = get_organization_apartment_detail(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        timezone_name="Europe/Istanbul",
+        reference_date=JULY,
+    )
+    assert detail.identity.label == "DD-1"
+    assert detail.residents[0].display_name == "Deniz Yalın"
+    assert detail.financial.total_charges == Decimal("300.00")
+    assert detail.financial.total_payments == Decimal("225.00")
+    assert detail.financial.total_allocated == Decimal("150.00")
+    assert detail.financial.total_unallocated == Decimal("75.00")
+    assert detail.financial.outstanding_debt == Decimal("150.00")
+    assert detail.financial.current_month_charges == Decimal("200.00")
+    assert detail.financial.current_month_payments == Decimal("225.00")
+    assert detail.financial.collection_rate == Decimal("112.50")
+    assert detail.financial.last_charge_date == date(2026, 8, 1)
+    assert detail.financial.last_payment_date == date(2026, 7, 20)
+    assert detail.financial.last_payment_amount == unallocated.amount
+    assert len(detail.charges.items) == 2
+    old_item = next(item for item in detail.charges.items if item.id == old_charge.id)
+    current_item = next(
+        item for item in detail.charges.items if item.id == current_charge.id
+    )
+    assert old_item.status_label == "Ödendi"
+    assert current_item.status_label == "Kısmi Ödendi"
+    assert detail.payments.total == 2
+    unused_item = next(
+        item for item in detail.payments.items if item.id == unallocated.id
+    )
+    assert unused_item.unallocated_amount == Decimal("75.00")
+    assert sum(
+        (item.credit for item in detail.movements.items),
+        start=Decimal("0.00"),
+    ) == Decimal("150.00")
+    chronological = tuple(reversed(detail.movements.items))
+    assert chronological[-1].running_balance == detail.financial.outstanding_debt
+    assert len(allocations) == 2
+
+
+def test_apartment_detail_route_scope_authorization_and_building_link(
+    client: FlaskClient,
+) -> None:
+    organization, admin = _scope()
+    building = _building(organization, "Route Binası", "ROUTE")
+    apartment = _apartment(organization, building, "1")
+    other_building = _building(organization, "Diğer Bina", "DIGER")
+    other = _organization("apartment-other", "apartment-other.example.com")
+    foreign_building = _building(other, "Yabancı Bina", "YBN")
+    foreign_apartment = _apartment(other, foreign_building, "9")
+    member = _user("apartment-detail-member@example.com")
+    db.session.add(
+        OrganizationMembership(
+            organization_id=organization.id,
+            user_id=member.id,
+            role=OrganizationMembershipRole.ORGANIZATION_MEMBER,
+        )
+    )
+    manager = _user("apartment-detail-manager@example.com")
+    db.session.add(
+        OrganizationMembership(
+            organization_id=organization.id,
+            user_id=manager.id,
+            role=OrganizationMembershipRole.ORGANIZATION_MEMBER,
+        )
+    )
+    db.session.add(
+        BuildingMembership(
+            organization_id=organization.id,
+            building_id=building.id,
+            user_id=manager.id,
+            role=BuildingMembershipRole.BUILDING_MANAGER,
+        )
+    )
+    resident = _resident(
+        organization,
+        apartment,
+        email="apartment-route-resident@example.com",
+        first_name="Route",
+        last_name="Resident",
+    )
+    db.session.commit()
+    url = f"/organization/buildings/{building.id}/apartments/{apartment.id}"
+    assert client.get(url, headers={"Host": HOST}).status_code == 302
+    _login(client, admin)
+    response = client.get(url, headers={"Host": HOST})
+    assert response.status_code == 200
+    assert b"Daire ROUTE-1" in response.data
+    building_response = client.get(
+        f"/organization/buildings/{building.id}",
+        headers={"Host": HOST},
+    )
+    assert url.encode() in building_response.data
+    assert (
+        client.get(
+            f"/organization/buildings/{other_building.id}/apartments/{apartment.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(
+            f"/organization/buildings/{building.id}/apartments/{foreign_apartment.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(
+            f"/organization/buildings/{foreign_building.id}/apartments/{foreign_apartment.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
+    assert "Yabancı Bina".encode() not in response.data
+    client.post("/auth/logout", headers={"Host": HOST})
+    _login(client, member)
+    assert client.get(url, headers={"Host": HOST}).status_code == 403
+    assert client.get(url, headers={"Host": "test.local"}).status_code == 403
+    client.post("/auth/logout", headers={"Host": HOST})
+    _login(client, manager)
+    assert client.get(url, headers={"Host": HOST}).status_code == 403
+    client.post("/auth/logout", headers={"Host": HOST})
+    _login(client, resident)
+    assert client.get(url, headers={"Host": HOST}).status_code == 403
+
+
+def test_apartment_detail_filters_pagination_and_query_budget() -> None:
+    organization, admin = _scope()
+    building = _building(organization, "Geçmiş Binası", "GEC")
+    apartment = _apartment(organization, building, "1")
+    for number in range(25):
+        create_manual_charge(
+            db.session,
+            organization_id=organization.id,
+            building_id=building.id,
+            apartment_id=apartment.id,
+            charge_type=ChargeType.MANUAL,
+            title=f"Kayıt {number:02d}",
+            description="Aranabilir açıklama" if number == 7 else None,
+            amount=str(100 + number),
+            due_date=date(2026, 7, (number % 28) + 1),
+            created_by_user_id=admin.id,
+        )
+        record_payment(
+            db.session,
+            organization_id=organization.id,
+            building_id=building.id,
+            apartment_id=apartment.id,
+            amount=str(50 + number),
+            payment_date=date(2026, 7, (number % 28) + 1),
+            payment_method=PaymentMethod.CASH,
+            recorded_by_user_id=admin.id,
+            reference=f"PAY-{number:02d}",
+        )
+    db.session.commit()
+    filtered = get_organization_apartment_detail(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        timezone_name="Europe/Istanbul",
+        charge_search="aranabilir",
+        payment_search="pay-07",
+        charge_sort="outstanding",
+        payment_sort="unallocated",
+        reference_date=JULY,
+    )
+    assert filtered.charges.total == 1
+    assert filtered.payments.total == 1
+    paged = get_organization_apartment_detail(
+        db.session,
+        organization_id=organization.id,
+        building_id=building.id,
+        apartment_id=apartment.id,
+        timezone_name="Europe/Istanbul",
+        charge_page=2,
+        payment_page=2,
+        charge_per_page=20,
+        payment_per_page=20,
+        charge_sort="invalid",
+        payment_sort="invalid",
+        reference_date=JULY,
+    )
+    assert len(paged.charges.items) == 5
+    assert len(paged.payments.items) == 5
+    assert paged.charges.sort == "date"
+    assert paged.payments.sort == "date"
+
+    query_count = 0
+
+    def count_query(*_: object) -> None:
+        nonlocal query_count
+        query_count += 1
+
+    engine = db.session.get_bind()
+    event.listen(engine, "before_cursor_execute", count_query)
+    try:
+        get_organization_apartment_detail(
+            db.session,
+            organization_id=organization.id,
+            building_id=building.id,
+            apartment_id=apartment.id,
+            timezone_name="Europe/Istanbul",
+            reference_date=JULY,
+        )
+    finally:
+        event.remove(engine, "before_cursor_execute", count_query)
+    assert query_count <= 15

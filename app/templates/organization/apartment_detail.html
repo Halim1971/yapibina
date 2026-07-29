@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Daire {{ detail.identity.label }}{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide apartment-detail">
+  <nav class="breadcrumb" aria-label="Sayfa yolu">
+    <a href="{{ url_for('organization.buildings') }}">Binalar</a><span>/</span>
+    <a href="{{ url_for('organization.building_detail', building_id=detail.identity.building_id) }}">{{ detail.identity.building_name }}</a><span>/</span>
+    <span>Daire {{ detail.identity.label }}</span>
+  </nav>
+  <header class="section-header">
+    <div>
+      <h1>Daire {{ detail.identity.label }}</h1>
+      <p class="muted">{{ detail.identity.building_name }}{% if detail.identity.block %} · Blok {{ detail.identity.block }}{% endif %}{% if detail.identity.floor %} · Kat {{ detail.identity.floor }}{% endif %}</p>
+    </div>
+    <div class="actions">
+      <a href="{{ url_for('organization.building_detail', building_id=detail.identity.building_id) }}">Bina Detayına Dön</a>
+      <a href="{{ url_for('organization.buildings') }}">Tüm Binalar</a>
+    </div>
+  </header>
+
+  <div class="dashboard-grid apartment-summary">
+    <article><span>Açık Borç</span><strong>{{ format_try(detail.financial.outstanding_debt) }} ₺</strong></article>
+    <article><span>Bu Ay Tahakkuk</span><strong>{{ format_try(detail.financial.current_month_charges) }} ₺</strong></article>
+    <article><span>Bu Ay Tahsilat</span><strong>{{ format_try(detail.financial.current_month_payments) }} ₺</strong></article>
+    <article><span>Tahsilat Oranı</span><strong>{% if detail.financial.collection_rate is not none %}%{{ format_try(detail.financial.collection_rate) }}{% else %}—{% endif %}</strong></article>
+    <article><span>Son Ödeme</span><strong>{% if detail.financial.last_payment_date %}{{ format_try(detail.financial.last_payment_amount) }} ₺<small>{{ detail.financial.last_payment_date.strftime("%d.%m.%Y") }}</small>{% else %}Ödeme yok{% endif %}</strong></article>
+    <article><span>Son Tahakkuk</span><strong>{% if detail.financial.last_charge_date %}{{ detail.financial.last_charge_date.strftime("%d.%m.%Y") }}{% else %}Tahakkuk yok{% endif %}</strong></article>
+    <article><span>Toplam Tahakkuk</span><strong>{{ format_try(detail.financial.total_charges) }} ₺</strong></article>
+    <article><span>Kullanılmamış Ödeme</span><strong>{{ format_try(detail.financial.total_unallocated) }} ₺</strong></article>
+  </div>
+
+  <section class="dashboard-section">
+    <h2>Aktif Sakinler</h2>
+    {% if detail.residents %}
+      <div class="resident-cards">
+      {% for resident in detail.residents %}
+        <article>
+          <strong>{{ resident.display_name }}</strong>
+          <span>{{ resident.email }}</span>
+          <span>{{ resident.phone or "Telefon belirtilmedi" }}</span>
+          <small>Başlangıç: {{ resident.starts_at.strftime("%d.%m.%Y") }}</small>
+        </article>
+      {% endfor %}
+      </div>
+    {% else %}<p class="empty-state">Bu daireye bağlı aktif resident bulunmuyor.</p>{% endif %}
+  </section>
+
+  <section class="dashboard-section">
+    <header class="section-header"><h2>Tahakkuk Geçmişi</h2><span class="muted">{{ detail.charges.total }} kayıt</span></header>
+    <form method="get" class="history-filters">
+      <input name="charge_q" value="{{ detail.charges.search }}" placeholder="Açıklama veya tür">
+      <select name="charge_sort">
+        <option value="date" {% if detail.charges.sort == "date" %}selected{% endif %}>Dönem / tarih</option>
+        <option value="amount" {% if detail.charges.sort == "amount" %}selected{% endif %}>Tutar</option>
+        <option value="outstanding" {% if detail.charges.sort == "outstanding" %}selected{% endif %}>Açık tutar</option>
+        <option value="due_date" {% if detail.charges.sort == "due_date" %}selected{% endif %}>Vade tarihi</option>
+      </select>
+      <select name="charge_direction"><option value="desc" {% if detail.charges.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if detail.charges.direction == "asc" %}selected{% endif %}>Artan</option></select>
+      <select name="charge_per_page">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if detail.charges.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select>
+      <input type="hidden" name="payment_q" value="{{ detail.payments.search }}"><input type="hidden" name="payment_sort" value="{{ detail.payments.sort }}"><input type="hidden" name="payment_direction" value="{{ detail.payments.direction }}"><input type="hidden" name="payment_page" value="{{ detail.payments.page }}"><input type="hidden" name="payment_per_page" value="{{ detail.payments.per_page }}"><input type="hidden" name="movement_page" value="{{ detail.movements.page }}">
+      <button class="button button-inline">Uygula</button>
+    </form>
+    {% if detail.charges.items %}
+      <div class="table-scroll"><table><thead><tr><th>Dönem</th><th>Açıklama</th><th>Oluşturma</th><th>Vade</th><th>Tutar</th><th>Ödenen</th><th>Açık</th><th>Durum</th></tr></thead><tbody>
+      {% for item in detail.charges.items %}<tr><td>{{ item.period_label }}</td><td>{{ item.title }}</td><td>{{ item.created_at.strftime("%d.%m.%Y") }}</td><td>{{ item.due_date.strftime("%d.%m.%Y") }}</td><td>{{ format_try(item.amount) }} ₺</td><td>{{ format_try(item.allocated_amount) }} ₺</td><td>{{ format_try(item.outstanding_amount) }} ₺</td><td><span class="badge">{{ item.status_label }}</span></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% if detail.charges.pages > 1 %}<nav class="pagination"><span>Sayfa {{ detail.charges.page }} / {{ detail.charges.pages }}</span>{% if detail.charges.has_previous %}<a href="{{ url_for('organization.apartment_detail', building_id=detail.identity.building_id, apartment_id=detail.identity.id, charge_page=detail.charges.page-1, charge_q=detail.charges.search, charge_sort=detail.charges.sort, charge_direction=detail.charges.direction, charge_per_page=detail.charges.per_page, payment_page=detail.payments.page, payment_q=detail.payments.search, payment_sort=detail.payments.sort, payment_direction=detail.payments.direction, payment_per_page=detail.payments.per_page) }}">Önceki</a>{% endif %}{% if detail.charges.has_next %}<a href="{{ url_for('organization.apartment_detail', building_id=detail.identity.building_id, apartment_id=detail.identity.id, charge_page=detail.charges.page+1, charge_q=detail.charges.search, charge_sort=detail.charges.sort, charge_direction=detail.charges.direction, charge_per_page=detail.charges.per_page, payment_page=detail.payments.page, payment_q=detail.payments.search, payment_sort=detail.payments.sort, payment_direction=detail.payments.direction, payment_per_page=detail.payments.per_page) }}">Sonraki</a>{% endif %}</nav>{% endif %}
+    {% else %}<p class="empty-state">Tahakkuk kaydı bulunmuyor.</p>{% endif %}
+  </section>
+
+  <section class="dashboard-section">
+    <header class="section-header"><h2>Ödeme Geçmişi</h2><span class="muted">{{ detail.payments.total }} kayıt</span></header>
+    <form method="get" class="history-filters">
+      <input name="payment_q" value="{{ detail.payments.search }}" placeholder="Açıklama, referans veya yöntem">
+      <select name="payment_sort"><option value="date" {% if detail.payments.sort == "date" %}selected{% endif %}>Tarih</option><option value="amount" {% if detail.payments.sort == "amount" %}selected{% endif %}>Tutar</option><option value="allocated" {% if detail.payments.sort == "allocated" %}selected{% endif %}>Uygulanan</option><option value="unallocated" {% if detail.payments.sort == "unallocated" %}selected{% endif %}>Kullanılmamış</option></select>
+      <select name="payment_direction"><option value="desc" {% if detail.payments.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if detail.payments.direction == "asc" %}selected{% endif %}>Artan</option></select>
+      <select name="payment_per_page">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if detail.payments.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select>
+      <input type="hidden" name="charge_q" value="{{ detail.charges.search }}"><input type="hidden" name="charge_sort" value="{{ detail.charges.sort }}"><input type="hidden" name="charge_direction" value="{{ detail.charges.direction }}"><input type="hidden" name="charge_page" value="{{ detail.charges.page }}"><input type="hidden" name="charge_per_page" value="{{ detail.charges.per_page }}"><input type="hidden" name="movement_page" value="{{ detail.movements.page }}">
+      <button class="button button-inline">Uygula</button>
+    </form>
+    {% if detail.payments.items %}
+      <div class="table-scroll"><table><thead><tr><th>Tarih</th><th>Açıklama</th><th>Yöntem</th><th>Tutar</th><th>Uygulanan</th><th>Kullanılmamış</th><th>Durum</th></tr></thead><tbody>
+      {% for item in detail.payments.items %}<tr><td>{{ item.payment_date.strftime("%d.%m.%Y") }}</td><td>{{ item.note }}</td><td>{{ item.method_label }}</td><td>{{ format_try(item.amount) }} ₺</td><td>{{ format_try(item.allocated_amount) }} ₺</td><td>{{ format_try(item.unallocated_amount) }} ₺</td><td><span class="badge">Kaydedildi</span></td></tr>{% endfor %}
+      </tbody></table></div>
+      {% if detail.payments.pages > 1 %}<nav class="pagination"><span>Sayfa {{ detail.payments.page }} / {{ detail.payments.pages }}</span>{% if detail.payments.has_previous %}<a href="{{ url_for('organization.apartment_detail', building_id=detail.identity.building_id, apartment_id=detail.identity.id, payment_page=detail.payments.page-1, payment_q=detail.payments.search, payment_sort=detail.payments.sort, payment_direction=detail.payments.direction, payment_per_page=detail.payments.per_page, charge_page=detail.charges.page, charge_q=detail.charges.search, charge_sort=detail.charges.sort, charge_direction=detail.charges.direction, charge_per_page=detail.charges.per_page) }}">Önceki</a>{% endif %}{% if detail.payments.has_next %}<a href="{{ url_for('organization.apartment_detail', building_id=detail.identity.building_id, apartment_id=detail.identity.id, payment_page=detail.payments.page+1, payment_q=detail.payments.search, payment_sort=detail.payments.sort, payment_direction=detail.payments.direction, payment_per_page=detail.payments.per_page, charge_page=detail.charges.page, charge_q=detail.charges.search, charge_sort=detail.charges.sort, charge_direction=detail.charges.direction, charge_per_page=detail.charges.per_page) }}">Sonraki</a>{% endif %}</nav>{% endif %}
+    {% else %}<p class="empty-state">Ödeme kaydı bulunmuyor.</p>{% endif %}
+  </section>
+
+  <section class="dashboard-section">
+    <h2>Bakiye Hareketleri</h2>
+    {% if detail.movements.items %}<div class="table-scroll"><table><thead><tr><th>Tarih</th><th>Tür</th><th>Açıklama</th><th>Borç</th><th>Ödeme</th><th>Bakiye</th></tr></thead><tbody>
+    {% for item in detail.movements.items %}<tr><td>{{ item.occurred_at.strftime("%d.%m.%Y %H:%M") }}</td><td>{{ item.kind }}</td><td>{{ item.description }}</td><td>{{ format_try(item.debit) }} ₺</td><td>{{ format_try(item.credit) }} ₺</td><td><strong>{{ format_try(item.running_balance) }} ₺</strong></td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if detail.movements.pages > 1 %}<nav class="pagination"><span>Sayfa {{ detail.movements.page }} / {{ detail.movements.pages }}</span>{% if detail.movements.has_previous %}<a href="{{ url_for('organization.apartment_detail', building_id=detail.identity.building_id, apartment_id=detail.identity.id, movement_page=detail.movements.page-1, charge_page=detail.charges.page, charge_q=detail.charges.search, charge_sort=detail.charges.sort, charge_direction=detail.charges.direction, charge_per_page=detail.charges.per_page, payment_page=detail.payments.page, payment_q=detail.payments.search, payment_sort=detail.payments.sort, payment_direction=detail.payments.direction, payment_per_page=detail.payments.per_page) }}">Önceki</a>{% endif %}{% if detail.movements.has_next %}<a href="{{ url_for('organization.apartment_detail', building_id=detail.identity.building_id, apartment_id=detail.identity.id, movement_page=detail.movements.page+1, charge_page=detail.charges.page, charge_q=detail.charges.search, charge_sort=detail.charges.sort, charge_direction=detail.charges.direction, charge_per_page=detail.charges.per_page, payment_page=detail.payments.page, payment_q=detail.payments.search, payment_sort=detail.payments.sort, payment_direction=detail.payments.direction, payment_per_page=detail.payments.per_page) }}">Sonraki</a>{% endif %}</nav>{% endif %}
+    {% else %}<p class="empty-state">Bakiye hareketi bulunmuyor.</p>{% endif %}
+  </section>
+</section>
+{% endblock %}

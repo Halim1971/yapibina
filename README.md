@@ -229,7 +229,21 @@ Son ödeme, mevcut modelde doğrudan daireye bağlı en yeni posted `Payment`
 kaydıdır. Tahsis edilmemiş ödeme aylık tahsilatta görünür fakat açık borcu
 azaltmaz. Finansal metrikler Genel Bakış ve Bina Listesi ile ortak tarih,
 dönem ve Decimal kurallarını kullanır. Bu aşamada yeni Building CRUD veya
-Apartment Detail davranışı eklenmemiştir.
+Apartment CRUD davranışı eklenmemiştir.
+
+## Organization daire detayı
+
+Organization admin bina detayından salt-okunur daire detayına geçebilir. Typed
+read-model; daire kimliği, aktif sakinler, finans özeti, tahakkuk ve ödeme
+geçmişleri ile bakiye hareketlerini tenant scope içinde üretir. Route ve
+template finans hesabı yapmaz.
+
+Açık borç posted charge toplamından yalnız geçerli allocation toplamının
+çıkarılmasıdır. Tahsis edilmemiş ödeme açık borcu veya running balance'ı
+azaltmaz. Bakiye hareketinde charge borcu artırır; allocation timezone-aware
+`created_at` anında borcu azaltır. Charge ve payment listeleri bağımsız arama,
+allowlist sıralama ve 20/50/100 kayıtlık server-side pagination kullanır.
+Apartment CRUD, ödeme/tahakkuk değiştirme veya JSON API bu kapsamda yoktur.
 
 ## Kimlik doğrulama
 

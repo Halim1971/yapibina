@@ -280,6 +280,37 @@ td {
   grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(8rem, 1fr)) auto;
 }
 
+.apartment-summary {
+  margin: 1rem 0 2rem;
+}
+
+.apartment-summary small {
+  display: block;
+  margin-top: 0.35rem;
+}
+
+.resident-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  gap: 0.75rem;
+}
+
+.resident-cards article {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.6rem;
+}
+
+.history-filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2fr) repeat(3, minmax(7rem, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin: 1rem 0;
+}
+
 @media (max-width: 42rem) {
   table {
     font-size: 0.9rem;
@@ -327,6 +358,10 @@ td {
   }
 
   .apartment-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .history-filters {
     grid-template-columns: 1fr;
   }
 }

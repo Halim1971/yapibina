@@ -49,7 +49,7 @@
 
     {% if detail.apartments.items %}
       <div class="table-scroll"><table>
-        <thead><tr><th>Daire</th><th>Resident</th><th>Açık borç</th><th>Bu ay tahakkuk</th><th>Bu ay tahsilat</th><th>Son ödeme</th><th>Durum</th></tr></thead>
+        <thead><tr><th>Daire</th><th>Resident</th><th>Açık borç</th><th>Bu ay tahakkuk</th><th>Bu ay tahsilat</th><th>Son ödeme</th><th>Durum</th><th></th></tr></thead>
         <tbody>{% for apartment in detail.apartments.items %}<tr>
           <td><strong>{{ apartment.label }}</strong><br><small>{{ apartment.location }}</small></td>
           <td>{{ apartment.resident_summary }}{% if apartment.active_resident_count > 1 %}<br><small>{{ apartment.active_resident_count }} aktif resident</small>{% endif %}</td>
@@ -58,6 +58,7 @@
           <td>{{ format_try(apartment.current_month_payments) }} ₺</td>
           <td>{% if apartment.last_payment_date %}{{ apartment.last_payment_date.strftime("%d.%m.%Y") }}<br><small>{{ format_try(apartment.last_payment_amount) }} ₺</small>{% else %}Ödeme yok{% endif %}</td>
           <td><span class="badge">{{ "Aktif" if apartment.is_active else "Pasif" }}</span></td>
+          <td><a href="{{ url_for('organization.apartment_detail', building_id=detail.building.id, apartment_id=apartment.id) }}">Daire Detayı</a></td>
         </tr>{% endfor %}</tbody>
       </table></div>
       {% if detail.apartments.pages > 1 %}

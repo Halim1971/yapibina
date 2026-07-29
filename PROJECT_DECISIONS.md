@@ -732,6 +732,22 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
   kesinleştiğinde outbox retry/dead-letter ve token retention politikaları
   ayrıca kararlaştırılır.
 
+## D-072 — Daire bakiye hareketinde yalnız allocation ödeme etkisi yaratır
+
+- **Karar:** Apartment Detail running balance hareketlerinde posted charge
+  borcu artırır; yalnız posted payment ile posted charge arasındaki geçerli
+  `PaymentAllocation` borcu azaltır. Allocation zamanı, modeldeki timezone-aware
+  `PaymentAllocation.created_at` alanıdır.
+- **Gerekçe:** Payment'ın tahsis edilmemiş kısmını borçtan yanlışlıkla düşmemek
+  ve gerçek borca uygulama anını deterministik biçimde göstermek.
+- **MVP kapsamı:** Hareketler kronolojik `(occurred_at, tür, UUID)` sırasıyla
+  hesaplanır; ekranda yeni→eski sunulsa da her satırın running balance değeri
+  kronolojik hesaplamadan gelir. Son bakiye açık borçla eşittir.
+- **Sonraya bırakılan alternatif:** Kaynak sistem allocation efektif tarihi
+  veya ayrı finans event zamanı.
+- **Yeniden değerlendirme koşulu:** Standart veri sözleşmesi güvenilir
+  allocation efektif tarihi sağlamaya başladığında.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:
