@@ -56,6 +56,14 @@ class BaseConfig:
     PLATFORM_HOSTNAME = os.getenv("PLATFORM_HOSTNAME", "platform.yapibina.com")
     BASE_TENANT_DOMAIN = os.getenv("BASE_TENANT_DOMAIN", "yapibina.com")
     MANAGEMENT_PAGE_SIZE = _environment_int("MANAGEMENT_PAGE_SIZE", 20)
+    IMPORT_PACKAGE_MAX_BYTES = _environment_int(
+        "IMPORT_PACKAGE_MAX_BYTES",
+        10_485_760,
+    )
+    IMPORT_EXTRACTED_MAX_BYTES = _environment_int(
+        "IMPORT_EXTRACTED_MAX_BYTES",
+        52_428_800,
+    )
 
     WEAK_SECRET_KEYS: ClassVar[frozenset[str]] = frozenset(
         {

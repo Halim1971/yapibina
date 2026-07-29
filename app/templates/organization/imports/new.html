@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Yeni Paket Yükle{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>Yeni Paket Yükle</h1>
+  <p>Yapıbina standart veri sözleşmesine uygun ZIP paketini seçin. Ön kontrol tamamlanmadan hiçbir kayıt değiştirilmez.</p>
+  <form method="post" enctype="multipart/form-data" class="management-form">
+    {{ form.hidden_tag() }}
+    <div class="field">
+      {{ form.package.label }}
+      {{ form.package(accept=".zip,application/zip") }}
+      {% for error in form.package.errors %}<span class="field-error">{{ error }}</span>{% endfor %}
+    </div>
+    {% for error in form.form_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+    <button class="button" type="submit">Ön Kontrolü Başlat</button>
+  </form>
+  <p class="muted">Paket en fazla {{ config.IMPORT_PACKAGE_MAX_BYTES // 1048576 }} MB olabilir. Dosya güvenli geçici alanda tutulur ve işlem sonunda silinir.</p>
+</section>
+{% endblock %}

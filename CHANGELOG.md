@@ -40,3 +40,5 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Tenant-aware, transaction-safe ve idempotent standart Excel importer
 - Import run/fingerprint takibi ve merkezi dış kaynak anahtarı eşleme modeli
 - Doğrulama ve dry-run destekli `flask import-standard-data` komutu
+- Organization admin için dry-run → açık onay akışlı Veri İçe Aktarma merkezi
+- Tenant-scoped import geçmişi/detayı ve güvenli geçici ZIP paket işleme

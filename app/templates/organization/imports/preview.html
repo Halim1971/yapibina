@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Paket Ön Kontrolü{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide">
+  <header class="section-header">
+    <div><h1>Paket doğrulandı</h1><p class="muted">Gerçek aktarım henüz başlamadı.</p></div>
+    {% if result.status == "already_imported" %}<span class="badge">Bu paket daha önce içe aktarılmış</span>{% endif %}
+  </header>
+  <div class="summary-grid import-summary">
+    <article><span>Site / bina</span><strong>{{ package.sites|length }}</strong></article>
+    <article><span>Daire</span><strong>{{ package.units|length }}</strong></article>
+    <article><span>Resident</span><strong>{{ package.units|length }}</strong></article>
+    <article><span>Borç</span><strong>{{ package.charges|length }}</strong></article>
+    <article><span>Ödeme</span><strong>{{ package.payments|length }}</strong></article>
+    <article><span>Yeni</span><strong>{{ result.inserted }}</strong></article>
+    <article><span>Güncellenecek</span><strong>{{ result.updated }}</strong></article>
+    <article><span>Değişmeyen</span><strong>{{ result.skipped }}</strong></article>
+    <article><span>Ertelenen</span><strong>{{ result.deferred }}</strong></article>
+  </div>
+  <dl class="import-metadata">
+    <div><dt>Şema sürümü</dt><dd>{{ package.schema_version }}</dd></div>
+    <div><dt>Kaynak</dt><dd>Standart Excel</dd></div>
+    <div><dt>Paket kimliği</dt><dd><code>{{ package.fingerprint }}</code></dd></div>
+  </dl>
+  {% if result.status == "already_imported" %}
+    <p class="alert">Bu paket daha önce içe aktarılmıştır. Onay verirseniz yeni kayıt oluşturulmadan mevcut sonuç gösterilir.</p>
+  {% else %}
+    <p class="alert">Aktarım senkron çalışır ve paket boyutuna göre zaman alabilir. Sayfayı yenilemeyin; sahte ilerleme yüzdesi gösterilmez.</p>
+  {% endif %}
+  <form method="post" action="{{ url_for('organization.import_confirm') }}" class="management-form import-confirm">
+    {{ confirm_form.hidden_tag() }}
+    <button class="button" type="submit">İçe Aktar</button>
+  </form>
+  <form method="post" action="{{ url_for('organization.import_cancel') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="link-button" type="submit">Vazgeç ve paketi sil</button>
+  </form>
+</section>
+{% endblock %}

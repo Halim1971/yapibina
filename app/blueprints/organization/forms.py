@@ -1,10 +1,12 @@
 from datetime import date
 
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField
 from wtforms import (
     BooleanField,
     DecimalField,
     EmailField,
+    HiddenField,
     PasswordField,
     SelectField,
     StringField,
@@ -172,3 +174,12 @@ class PaymentCreateForm(FlaskForm):  # type: ignore[misc]
         "Ödemeyi en eski açık borçtan başlayarak işle",
         default=True,
     )
+
+
+class ImportPackageForm(FlaskForm):  # type: ignore[misc]
+    package = FileField("Canonical veri paketi (.zip)", validators=[InputRequired()])
+
+
+class ImportConfirmForm(FlaskForm):  # type: ignore[misc]
+    staging_token = HiddenField(validators=[InputRequired()])
+    fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])

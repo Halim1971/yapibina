@@ -74,10 +74,39 @@ flask import-standard-data \
 insert/update/skip sayılarını doğrular; kalıcı ImportRun veya domain değişikliği
 bırakmaz.
 
+## Organization Admin Import Center
+
+Tenant organization admin kullanıcıları `/organization/imports` üzerinden
+canonical paketi ZIP olarak yükler. Organization bilgisi URL, query string veya
+formdan alınmaz; yalnız doğrulanmış aktif tenant context kullanılır.
+
+Akış:
+
+1. Paket yüklenir ve repository dışındaki `instance/import_staging` altında
+   rastgele bir token dizinine alınır.
+2. ZIP uzantısı, MIME türü, dosya imzası, arşiv yolları, symlink/şifreleme,
+   sıkıştırılmış ve açılmış boyut sınırları doğrulanır.
+3. Mevcut reader ve importer application service ile dry-run çalıştırılır.
+4. Token, organization ve fingerprint sunucu tarafı session kaydıyla bağlanır.
+5. Gerçek import yalnız CSRF korumalı açık onaydan sonra aynı paket tekrar
+   doğrulanarak çalıştırılır.
+6. Onay, vazgeçme veya hata sonrasında geçici paket temizlenir.
+
+İkinci form gönderimi session token tüketildiği için reddedilir. Daha önce
+tamamlanan aynı fingerprint hata yerine açıklayıcı `already_imported` sonucu
+verir. Import geçmişi ve detay sorguları daima aktif tenant organization ile
+scope edilir; başka tenant run kimliği 404 üretir.
+
+İlk sürüm senkrondur. Kullanıcıya işlemin zaman alabileceği söylenir fakat sahte
+ilerleme yüzdesi gösterilmez. Import orchestration HTTP katmanında olmadığı için
+ileride background job'a taşınabilir.
+
 ## Bilinen riskler
 
 - E-posta global benzersizdir; aynı e-posta varsa global User yeniden kullanılır
   ancak tenant membership ayrı oluşturulur.
 - Harici mapping UUID'si polymorphic olduğundan DB seviyesinde entity FK yoktur.
 - Çok uzun importlar senkron CLI transaction süresini artırabilir.
+- Yarım bırakılan browser oturumlarındaki geçici paketler için production'da
+  yaşa dayalı periyodik temizlik görevi gerekecektir.
 - Gider/duyuru persistence, gerçek adapter ve silme semantiği sonraki aşamadadır.

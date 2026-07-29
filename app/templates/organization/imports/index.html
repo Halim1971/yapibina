@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Veri İçe Aktarma{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide">
+  <header class="section-header">
+    <div>
+      <h1>Veri İçe Aktarma</h1>
+      <p class="muted">Doğrulanmış standart Excel paketlerini önce kontrol edin, ardından açıkça onaylayın.</p>
+    </div>
+    <a class="button button-inline" href="{{ url_for('organization.import_new') }}">Yeni Paket Yükle</a>
+  </header>
+
+  <h2>Son aktarımlar</h2>
+  {% if pagination.items %}
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Durum</th><th>Başlangıç</th><th>Bitiş</th><th>Sonuç</th><th>Başlatan</th></tr></thead>
+        <tbody>
+        {% for run in pagination.items %}
+          <tr>
+            <td><a href="{{ url_for('organization.import_detail', import_run_id=run.id) }}">{{ {"pending": "Bekliyor", "running": "Çalışıyor", "completed": "Tamamlandı", "failed": "Başarısız"}[run.status.value] }}</a></td>
+            <td>{{ run.started_at.strftime("%d.%m.%Y %H:%M") }}</td>
+            <td>{{ run.finished_at.strftime("%d.%m.%Y %H:%M") if run.finished_at else "—" }}</td>
+            <td>{{ run.inserted_count }} yeni · {{ run.updated_count }} güncel · {{ run.skipped_count }} değişmedi · {{ run.expense_count + run.announcement_count }} ertelendi</td>
+            <td>{{ actor_names.get(run.created_by_user_id, "Sistem") }}</td>
+          </tr>
+          {% if run.error_summary %}<tr><td colspan="5" class="field-error">{{ run.error_summary }}</td></tr>{% endif %}
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="empty-state">Henüz bir veri paketi içe aktarılmadı.</p>
+  {% endif %}
+  <div class="pagination">
+    {% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}">Önceki</a>{% endif %}
+    <span>{{ pagination.page }}/{{ pagination.pages or 1 }}</span>
+    {% if pagination.has_next %}<a href="?page={{ pagination.next_num }}">Sonraki</a>{% endif %}
+  </div>
+</section>
+{% endblock %}

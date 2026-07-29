@@ -167,6 +167,65 @@ td {
   background: var(--color-surface);
 }
 
+.button-inline {
+  width: auto;
+  text-decoration: none;
+}
+
+.link-button {
+  padding: 0;
+  border: 0;
+  color: var(--color-primary);
+  background: transparent;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.empty-state {
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--color-surface);
+}
+
+.import-summary {
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+}
+
+.import-metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.import-metadata div {
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--color-secondary);
+}
+
+.import-metadata dt {
+  color: #526767;
+}
+
+.import-metadata dd {
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+  font-weight: 700;
+}
+
+.import-metadata .full {
+  grid-column: 1 / -1;
+}
+
+.import-confirm {
+  max-width: 20rem;
+  margin: 1.5rem 0;
+}
+
 @media (max-width: 42rem) {
   table {
     font-size: 0.9rem;
@@ -175,6 +234,14 @@ td {
   .actions {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .nav {
+    flex-wrap: wrap;
+  }
+
+  .import-metadata {
+    grid-template-columns: 1fr;
   }
 }
 

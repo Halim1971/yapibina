@@ -537,6 +537,33 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Kaynak sözleşmeye güvenilir batch anahtarı
   eklendiğinde.
 
+## D-058 — Web import iki aşamalı ve fingerprint bağlıdır
+
+- **Karar:** Organization admin web importu önce dry-run, sonra açık onay ile
+  çalışır. Onay sunucu tarafında tenant, rastgele staging token ve fingerprint
+  üçlüsüne bağlıdır.
+- **Gerekçe:** Dosya değişimi, cross-tenant onay, yanlışlıkla import ve çift
+  form gönderimi risklerini azaltmak.
+- **MVP kapsamı:** Güvenli ZIP staging, CSRF, boyut/içerik/path doğrulaması,
+  senkron import ve tenant-scoped geçmiş/detay.
+- **Sonraya bırakılan alternatif:** Doğrudan upload sonrası import veya sahte
+  progress gösteren request-içi işlem.
+- **Yeniden değerlendirme koşulu:** Paket boyutu/request süresi background job
+  ve kalıcı private object storage gerektirdiğinde.
+
+## D-059 — Organization-level import yalnız organization admin yetkisidir
+
+- **Karar:** Organization Import Center aktif tenant context ve
+  `organization_admin_required` ister. Building manager, resident ve platform
+  admin tenant yetkisini otomatik kazanmaz.
+- **Gerekçe:** Import bütün organization kapsamını ve finansal read-model
+  verisini değiştirebilir; bina düzeyi yetki yeterli değildir.
+- **MVP kapsamı:** Tenant dışı ImportRun için 404, rol yetersizliğinde 403.
+- **Sonraya bırakılan alternatif:** Açık organization-level import permission
+  veya süreli platform break-glass erişimi.
+- **Yeniden değerlendirme koşulu:** Ayrıntılı permission modeli veya onay
+  workflow'u eklendiğinde.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

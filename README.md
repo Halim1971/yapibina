@@ -183,6 +183,12 @@ Importer manifest/hash/schema doğrulaması yapar; site, daire, resident, borç 
 satırları doğrulanıp raporlanır, fakat henüz veritabanına yazılmaz. Gerçek
 Apsiyon adapter'ı ve tarayıcı otomasyonu oluşturulmamıştır.
 
+Organization admin, tenant panelindeki `/organization/imports` ekranından
+canonical ZIP paketini yükleyebilir. Sistem önce salt ön kontrol/dry-run sonucu
+gösterir; gerçek aktarım yalnız açık **İçe Aktar** onayından sonra aynı
+fingerprint'e sahip geçici paketle başlar. Paketler repository dışında güvenli
+geçici alanda tutulur ve onay, vazgeçme veya hata sonrasında temizlenir.
+
 ## Kimlik doğrulama
 
 Giriş yalnız kullanıcının yetkili olduğu host üzerinde çalışır:

@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}İçe Aktarma Detayı{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide">
+  <header class="section-header"><h1>İçe Aktarma Detayı</h1><a href="{{ url_for('organization.imports') }}">Listeye dön</a></header>
+  <dl class="import-metadata">
+    <div><dt>Durum</dt><dd>{{ {"pending": "Bekliyor", "running": "Çalışıyor", "completed": "Tamamlandı", "failed": "Başarısız"}[run.status.value] }}</dd></div>
+    <div><dt>Başlangıç</dt><dd>{{ run.started_at.strftime("%d.%m.%Y %H:%M") }}</dd></div>
+    <div><dt>Bitiş</dt><dd>{{ run.finished_at.strftime("%d.%m.%Y %H:%M") if run.finished_at else "—" }}</dd></div>
+    <div><dt>Kaynak</dt><dd>{{ run.source_system }}</dd></div>
+    <div><dt>Şema</dt><dd>{{ run.schema_version }}</dd></div>
+    <div><dt>Başlatan</dt><dd>{{ actor_name }}</dd></div>
+    <div class="full"><dt>Paket kimliği</dt><dd><code>{{ run.package_fingerprint }}</code></dd></div>
+  </dl>
+  <div class="summary-grid import-summary">
+    <article><span>Yeni</span><strong>{{ run.inserted_count }}</strong></article>
+    <article><span>Güncellenen</span><strong>{{ run.updated_count }}</strong></article>
+    <article><span>Değişmeyen</span><strong>{{ run.skipped_count }}</strong></article>
+    <article><span>Ertelenen</span><strong>{{ run.expense_count + run.announcement_count }}</strong></article>
+  </div>
+  {% if run.error_summary %}<p class="alert field-error">{{ run.error_summary }}</p>{% endif %}
+</section>
+{% endblock %}
