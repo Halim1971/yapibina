@@ -1,3 +1,4 @@
+from app.imports.models import ExternalRecordMap, ImportRun, ImportRunStatus
 from app.models.apartment import Apartment, ApartmentMembership
 from app.models.building import Building, BuildingMembership
 from app.models.domain import OrganizationDomain
@@ -34,6 +35,9 @@ __all__ = [
     "ChargeType",
     "DomainState",
     "DomainType",
+    "ExternalRecordMap",
+    "ImportRun",
+    "ImportRunStatus",
     "Organization",
     "OrganizationBranding",
     "OrganizationDomain",

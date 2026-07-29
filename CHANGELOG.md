@@ -37,3 +37,6 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Adapter-bağımsız standart Excel veri sözleşmesi ve deterministik demo paketi
 - Beş site, 50 daire/resident ve kontrollü altı aylık finans senaryoları
 - Manifest satır/hash doğrulamalı demo generator ve validator araçları
+- Tenant-aware, transaction-safe ve idempotent standart Excel importer
+- Import run/fingerprint takibi ve merkezi dış kaynak anahtarı eşleme modeli
+- Doğrulama ve dry-run destekli `flask import-standard-data` komutu

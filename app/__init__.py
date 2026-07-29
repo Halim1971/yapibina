@@ -9,6 +9,7 @@ from app.blueprints import register_blueprints
 from app.context import register_context_processors
 from app.errors import register_error_handlers
 from app.extensions import csrf, db, limiter, login_manager, migrate
+from app.imports import register_import_commands
 from app.tenant.resolver import register_tenant_resolution
 from config import get_config
 
@@ -35,6 +36,7 @@ def create_app(config_name: str | None = None) -> Flask:
     register_error_handlers(app)
     register_context_processors(app)
     register_tenant_resolution(app)
+    register_import_commands(app)
 
     return app
 

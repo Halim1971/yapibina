@@ -170,8 +170,18 @@ python scripts/validate_demo_data.py
 Üretim sabit seed ile byte düzeyinde deterministiktir. `manifest.json` her Excel
 dosyasının satır sayısını ve SHA-256 değerini taşır. Veriler tamamen kurgusaldır;
 e-postalar yalnız `example.com`, telefonlar yalnız `DEMO-` biçimindedir.
-Dosyalar henüz uygulamaya import edilmez. Gerçek Apsiyon adapter'ı ve tarayıcı
-otomasyonu oluşturulmamıştır.
+Standart paket, önceden oluşturulmuş bir organization'a doğrulama amaçlı veya
+kalıcı olarak aktarılabilir:
+
+```bash
+flask import-standard-data --organization-id <UUID> --path demo_data --dry-run
+flask import-standard-data --organization-id <UUID> --path demo_data
+```
+
+Importer manifest/hash/schema doğrulaması yapar; site, daire, resident, borç ve
+ödemeleri stabil kaynak anahtarlarıyla idempotent olarak eşler. Gider ve duyuru
+satırları doğrulanıp raporlanır, fakat henüz veritabanına yazılmaz. Gerçek
+Apsiyon adapter'ı ve tarayıcı otomasyonu oluşturulmamıştır.
 
 ## Kimlik doğrulama
 
@@ -195,6 +205,7 @@ yayınından önce ayrı bir aşamada tamamlanacaktır.
 ```text
 app/
   blueprints/       HTTP modül sınırları
+  imports/          Standart Excel reader, doğrulama ve tenant-safe importer
   models/           Tenant çekirdeğinin SQLAlchemy 2.x modelleri
   repositories/     İleride eklenecek tenant-scoped veri erişimi
   services/         Tenant-safe ilişki ve doğrulama servisleri
@@ -216,7 +227,7 @@ subscription modelleri yoktur. Kayıt, parola
 sıfırlama, e-posta daveti/doğrulaması, MFA, resident gider/duyuru ekranları,
 online ödeme,
 dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
-Docker ve background job altyapısı oluşturulmamıştır. Demo Excel paketi mevcut
-olsa da importer veya Apsiyon adapter henüz bulunmaz.
+Docker ve background job altyapısı oluşturulmamıştır. Standart Excel importer
+mevcuttur; Apsiyon adapter henüz bulunmaz.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.

@@ -19,6 +19,8 @@ EXPECTED_TABLES = {
     "charges",
     "payments",
     "payment_allocations",
+    "import_runs",
+    "external_record_maps",
 }
 
 
@@ -62,3 +64,18 @@ def test_financial_migration_exists() -> None:
     versions = list(Path("migrations/versions").glob("*_add_charge_and_payment_core.py"))
 
     assert len(versions) == 1
+
+
+def test_import_tracking_migration_and_source_key_constraint_exist() -> None:
+    versions = list(
+        Path("migrations/versions").glob("*_add_standard_data_import_tracking.py")
+    )
+    mapping = db.metadata.tables["external_record_maps"]
+
+    assert len(versions) == 1
+    assert any(
+        isinstance(constraint, UniqueConstraint)
+        and {column.name for column in constraint.columns}
+        == {"organization_id", "source_system", "entity_type", "source_key"}
+        for constraint in mapping.constraints
+    )

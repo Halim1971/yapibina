@@ -485,6 +485,58 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Schema version yükseldiğinde veya yeni demo
   senaryoları ürün kabul kriterine girdiğinde.
 
+## D-054 — Importer merkezi external mapping kullanır
+
+- **Karar:** Kaynak kimlikleri tenant, source system, entity type ve source key
+  bileşimi benzersiz olan `ExternalRecordMap` ile iç UUID kayıtlarına eşlenir.
+- **Gerekçe:** Domain tablolarını kaynağa özel kolonlarla kirletmeden birden
+  fazla adapter ve tenant için idempotency sağlamak.
+- **MVP kapsamı:** Site/building, unit/apartment, resident/user, charge ve
+  payment eşlemeleri; mapping iç UUID'sinin polymorphic bütünlüğü service
+  katmanında doğrulanır.
+- **Sonraya bırakılan alternatif:** Her domain tablosuna source kolonları veya
+  entity başına ayrı mapping tabloları eklemek.
+- **Yeniden değerlendirme koşulu:** Polymorphic bütünlük hatası görülürse ya da
+  entity-specific database foreign key zorunluluğu oluşursa.
+
+## D-055 — Aynı paket fingerprint'i no-op'tur
+
+- **Karar:** Manifestteki schema sürümü ile sıralı dosya/hash listesinden stabil
+  fingerprint üretilir. Aynı tenant/source için tamamlanmış fingerprint yeniden
+  gelirse yeni run veya domain kaydı oluşturulmadan `already_imported` döner.
+- **Gerekçe:** Operasyonel tekrarların gözlenebilir, hızlı ve güvenli olması.
+- **MVP kapsamı:** ImportRun durum/sayaçları, organization başına tek running
+  import ve tamamlanan fingerprint için unique koruma.
+- **Sonraya bırakılan alternatif:** Aynı paketi her seferinde satır satır tekrar
+  işlemek.
+- **Yeniden değerlendirme koşulu:** Aynı byte paketinin bilinçli reprocessing
+  ihtiyacı doğarsa.
+
+## D-056 — Finansal kritik import değişiklikleri reddedilir
+
+- **Karar:** Aynı source key için charge/payment tutarı, daire, bina, tarih veya
+  ödeme yöntemi sessizce değiştirilmez; import tamamen rollback edilir. Açıklama
+  gibi güvenli alanlar güncellenebilir.
+- **Gerekçe:** Allocation ve bakiye geçmişini geriye dönük bozmayı engellemek.
+- **MVP kapsamı:** Append/upsert, no-delete; paketten artık gelmeyen kayıtlar
+  silinmez veya pasifleştirilmez.
+- **Sonraya bırakılan alternatif:** Kontrollü reversal ve yeniden hesaplama.
+- **Yeniden değerlendirme koşulu:** Gerçek Apsiyon raporlarının düzeltme ve
+  silinme semantiği doğrulandığında.
+
+## D-057 — Import charge kayıtları yapay batch üretmez
+
+- **Karar:** Standart pakette her charge kendi stabil source key'ine sahip
+  olduğundan imported charge kayıtları nullable `charge_batch_id` ile doğrudan
+  posted oluşturulur.
+- **Gerekçe:** Yönetici tarafından oluşturulan toplu aidat batch semantiğini
+  dış kaynak hareketleri için uydurma kayıtlarla karıştırmamak.
+- **MVP kapsamı:** Mevcut manuel/toplu aidat akışına dokunmadan charge importu.
+- **Sonraya bırakılan alternatif:** Adapter gerçek batch kimliği sağladığında
+  deterministik imported batch eşlemesi.
+- **Yeniden değerlendirme koşulu:** Kaynak sözleşmeye güvenilir batch anahtarı
+  eklendiğinde.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:
