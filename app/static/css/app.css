@@ -256,6 +256,14 @@ td {
   grid-template-columns: 0.8fr 1.7fr 1.3fr 0.6fr 0.8fr;
 }
 
+.building-filters {
+  display: grid;
+  grid-template-columns: minmax(14rem, 2fr) repeat(3, minmax(8rem, 1fr)) auto;
+  gap: 0.75rem;
+  align-items: end;
+  margin: 1rem 0;
+}
+
 @media (max-width: 42rem) {
   table {
     font-size: 0.9rem;
@@ -296,6 +304,10 @@ td {
     content: attr(data-label) ": ";
     color: #526767;
     font-weight: 400;
+  }
+
+  .building-filters {
+    grid-template-columns: 1fr;
   }
 }
 

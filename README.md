@@ -204,6 +204,20 @@ kez sayılmaz. Aylık tahakkukta önce charge dönem alanları, bunlar yoksa
 `due_date` kullanılır. Tüm hesaplar `Decimal` ve açık `organization_id`
 kapsamıyla yürütülür.
 
+## Organization bina listesi
+
+Organization admin `/organization/buildings` ekranında yalnız aktif tenant
+kapsamındaki binaları görür. Liste; ad ve adres araması, izin verilen metriklere
+göre sıralama ve 20/50/100 kayıtlık server-side sayfalama sağlar. Her satırda
+daire ve aktif resident sayısı, güncel açık borç, içinde bulunulan ayın ödeme
+toplamı ve bina durumu gösterilir.
+
+Finansal ve resident metrikleri Genel Bakış ile aynı tanımları kullanır:
+açık borç posted charge'lardan geçerli allocation'ların çıkarılmasıyla,
+aylık tahsilat ise allocation'lardan bağımsız olarak tekil posted payment
+toplamıyla hesaplanır. Bu aşama yeni bina CRUD veya yeni bir bina detay ekranı
+eklemez; mevcut yönetim davranışlarını değiştirmez.
+
 ## Kimlik doğrulama
 
 Giriş yalnız kullanıcının yetkili olduğu host üzerinde çalışır:

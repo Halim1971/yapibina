@@ -1,2 +1,86 @@
-{% extends "base.html" %}{% from "components/nav.html" import organization_nav %}{% block navigation %}{{ organization_nav() }}{% endblock %}
-{% block content %}<section class="panel wide"><header class="section-header"><h1>Binalar</h1><a href="{{ url_for('organization.building_new') }}">Yeni</a></header><form method="get" class="search"><input name="q" value="{{ search }}"><button>Ara</button></form>{% if pagination.items %}<table><tr><th>Ad</th><th>Kod</th><th>Durum</th></tr>{% for item in pagination.items %}<tr><td><a href="{{ url_for('organization.building_detail', building_id=item.id) }}">{{ item.name }}</a></td><td>{{ item.code }}</td><td>{{ "aktif" if item.is_active else "pasif" }}</td></tr>{% endfor %}</table>{% else %}<p>Bina bulunamadı.</p>{% endif %}<div class="pagination">{% if pagination.has_prev %}<a href="?page={{ pagination.prev_num }}&q={{ search }}">Önceki</a>{% endif %}<span>{{ pagination.page }}/{{ pagination.pages or 1 }}</span>{% if pagination.has_next %}<a href="?page={{ pagination.next_num }}&q={{ search }}">Sonraki</a>{% endif %}</div></section>{% endblock %}
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav %}
+{% block title %}Binalar{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide building-list">
+  <header class="section-header">
+    <div>
+      <h1>Binalar</h1>
+      <p class="muted">Toplam {{ listing.total }} bina</p>
+    </div>
+  </header>
+
+  <form method="get" class="building-filters">
+    <div class="field">
+      <label for="building-search">Arama</label>
+      <input id="building-search" name="q" value="{{ listing.search }}" placeholder="Bina adı veya adres">
+    </div>
+    <div class="field">
+      <label for="building-sort">Sıralama</label>
+      <select id="building-sort" name="sort">
+        <option value="name" {% if listing.sort == "name" %}selected{% endif %}>Bina adı</option>
+        <option value="apartments" {% if listing.sort == "apartments" %}selected{% endif %}>Daire sayısı</option>
+        <option value="debt" {% if listing.sort == "debt" %}selected{% endif %}>Açık borç</option>
+        <option value="payments" {% if listing.sort == "payments" %}selected{% endif %}>Bu ay tahsilat</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="building-direction">Yön</label>
+      <select id="building-direction" name="direction">
+        <option value="asc" {% if listing.direction == "asc" %}selected{% endif %}>Artan</option>
+        <option value="desc" {% if listing.direction == "desc" %}selected{% endif %}>Azalan</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="building-page-size">Sayfa boyutu</label>
+      <select id="building-page-size" name="per_page">
+        {% for size in (20, 50, 100) %}<option value="{{ size }}" {% if listing.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+      </select>
+    </div>
+    <button class="button button-inline" type="submit">Uygula</button>
+  </form>
+
+  {% if listing.items %}
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Bina</th><th>Adres</th><th>Daire</th><th>Aktif resident</th><th>Açık borç</th><th>Bu ay tahsilat</th><th>Durum</th><th></th></tr></thead>
+        <tbody>
+        {% for item in listing.items %}
+          <tr>
+            <td>{{ item.name }}</td>
+            <td>{{ item.address }}</td>
+            <td>{{ item.apartment_count }}</td>
+            <td>{{ item.active_resident_count }}</td>
+            <td>{{ format_try(item.outstanding_debt) }} ₺</td>
+            <td>{{ format_try(item.current_month_payments) }} ₺</td>
+            <td><span class="badge">{{ "Aktif" if item.is_active else "Pasif" }}</span></td>
+            <td><a href="{{ url_for('organization.building_detail', building_id=item.id) }}">Görüntüle</a></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if listing.pages > 1 %}
+      <nav class="pagination" aria-label="Bina listesi sayfaları">
+        {% if listing.has_previous %}
+          <a href="{{ url_for('organization.buildings', page=1, per_page=listing.per_page, q=listing.search, sort=listing.sort, direction=listing.direction) }}">İlk</a>
+          <a href="{{ url_for('organization.buildings', page=listing.page - 1, per_page=listing.per_page, q=listing.search, sort=listing.sort, direction=listing.direction) }}">Önceki</a>
+        {% endif %}
+        <span>Sayfa {{ listing.page }} / {{ listing.pages }}</span>
+        {% if listing.has_next %}
+          <a href="{{ url_for('organization.buildings', page=listing.page + 1, per_page=listing.per_page, q=listing.search, sort=listing.sort, direction=listing.direction) }}">Sonraki</a>
+          <a href="{{ url_for('organization.buildings', page=listing.pages, per_page=listing.per_page, q=listing.search, sort=listing.sort, direction=listing.direction) }}">Son</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% elif listing.search %}
+    <div class="empty-state">
+      <p>Aramanızla eşleşen bina bulunamadı.</p>
+      <a href="{{ url_for('organization.buildings') }}">Aramayı temizle</a>
+    </div>
+  {% else %}
+    <p class="empty-state">Henüz bina bulunmuyor.</p>
+  {% endif %}
+</section>
+{% endblock %}

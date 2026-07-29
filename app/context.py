@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 from typing import Final
 
 from flask import Flask, g
@@ -16,9 +17,18 @@ DEFAULT_THEME: Final[dict[str, str]] = {
 }
 
 
+def format_try(value: Decimal) -> str:
+    formatted = f"{value:,.2f}"
+    return (
+        formatted.replace(",", "\u0000")
+        .replace(".", ",")
+        .replace("\u0000", ".")
+    )
+
+
 def register_context_processors(app: Flask) -> None:
     @app.context_processor
-    def default_theme() -> dict[str, dict[str, str]]:
+    def default_theme() -> dict[str, object]:
         theme = DEFAULT_THEME.copy()
         tenant = getattr(g, "tenant", None)
         if tenant is not None:
@@ -39,4 +49,4 @@ def register_context_processors(app: Flask) -> None:
                         if value
                     }
                 )
-        return {"theme": theme}
+        return {"theme": theme, "format_try": format_try}

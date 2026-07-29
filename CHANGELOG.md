@@ -44,3 +44,5 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Tenant-scoped import geçmişi/detayı ve güvenli geçici ZIP paket işleme
 - Organization admin için tenant-scoped operasyon ve finans genel bakış ekranı
 - Toplu sorgularla bina özeti, son import durumu ve birleşik finans hareketleri
+- Tenant-scoped arama, allowlist sıralama ve server-side sayfalama kullanan bina listesi
+- Bina bazında daire, aktif resident, açık borç ve aylık tahsilat özetleri

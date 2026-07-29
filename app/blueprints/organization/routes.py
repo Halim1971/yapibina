@@ -44,6 +44,7 @@ from app.services.dues_dashboard import (
     get_dues_dashboard,
     list_active_buildings_for_dues,
 )
+from app.services.organization_buildings import list_organization_buildings
 from app.services.organization_dashboard import get_organization_dashboard
 from app.services.organization_management import (
     create_apartment,
@@ -101,22 +102,22 @@ def index() -> str:
 @organization_blueprint.get("/buildings")
 @organization_admin_required
 def buildings() -> str:
-    organization_id = _organization_id()
-    page = request.args.get("page", 1, type=int)
-    search = request.args.get("q", "").strip()
-    statement = (
-        select(Building).where(Building.organization_id == organization_id).order_by(Building.name)
+    listing = list_organization_buildings(
+        db.session,
+        organization_id=_organization_id(),
+        timezone_name=current_app.config["DEFAULT_TIMEZONE"],
+        search=request.args.get("q", ""),
+        sort=request.args.get("sort", "name"),
+        direction=request.args.get("direction", "asc"),
+        page=request.args.get("page", 1, type=int) or 1,
+        per_page=request.args.get(
+            "per_page",
+            current_app.config["MANAGEMENT_PAGE_SIZE"],
+            type=int,
+        )
+        or current_app.config["MANAGEMENT_PAGE_SIZE"],
     )
-    if search:
-        pattern = f"%{search}%"
-        statement = statement.where(or_(Building.name.ilike(pattern), Building.code.ilike(pattern)))
-    pagination = db.paginate(
-        statement,
-        page=max(page, 1),
-        per_page=current_app.config["MANAGEMENT_PAGE_SIZE"],
-        error_out=False,
-    )
-    return render_template("organization/buildings.html", pagination=pagination, search=search)
+    return render_template("organization/buildings.html", listing=listing)
 
 
 @organization_blueprint.route("/buildings/new", methods=["GET", "POST"])

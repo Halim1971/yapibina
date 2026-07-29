@@ -592,6 +592,33 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Organization-level ayrıntılı permission
   modeli devreye alındığında.
 
+## D-062 — Bina listesi toplu read-model sorgusudur
+
+- **Karar:** Organization bina listesi, tenant filtreli aggregate alt sorguları
+  birleştiren bir read-model servisiyle üretilir; satır başına sorgu çalışmaz.
+- **Gerekçe:** Daire, resident ve finans metriklerini N+1 oluşturmadan aramak,
+  sıralamak ve sayfalamak gerekir.
+- **MVP kapsamı:** Filtrelenmiş toplam için bir count ve sayfa verisi için bir
+  aggregate sorgu; ad, daire, açık borç ve aylık tahsilat için allowlist
+  sıralama; 20/50/100 kayıtlık server-side sayfalama.
+- **Sonraya bırakılan alternatif:** Cache, materialized view veya ayrı arama
+  altyapısı.
+- **Yeniden değerlendirme koşulu:** Production sorgu planları ve ölçümleri
+  mevcut iki sorgulu yaklaşımın hedef yanıt süresini karşılamadığını gösterirse.
+
+## D-063 — Bina listesi metrikleri dashboard ile aynı semantiği kullanır
+
+- **Karar:** Açık borç, aylık tahsilat ve aktif resident tanımları Organization
+  Dashboard ile ortak helper ve aynı filtre kurallarını kullanır.
+- **Gerekçe:** Aynı tenant verisinin iki yönetim ekranında farklı toplamlarla
+  görünmesi güven kaybı yaratır.
+- **MVP kapsamı:** Posted charge eksi geçerli allocation, tekil posted payment
+  aylık toplamı ve aktif user/organization/apartment üyeliği zinciri; tümünde
+  açık `organization_id` kapsamı.
+- **Sonraya bırakılan alternatif:** Kalıcı projection/snapshot metrikleri.
+- **Yeniden değerlendirme koşulu:** Import edilen kaynak verinin finans veya
+  resident semantiği değişirse ortak read-model kuralları birlikte güncellenir.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

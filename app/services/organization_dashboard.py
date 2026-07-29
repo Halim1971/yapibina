@@ -75,18 +75,18 @@ class OrganizationDashboard:
     period_label: str
 
 
-def _money(value: object) -> Decimal:
+def money_decimal(value: object) -> Decimal:
     return Decimal(str(value or 0)).quantize(Decimal("0.01"))
 
 
-def _month_range(reference: date) -> tuple[date, date]:
+def month_range(reference: date) -> tuple[date, date]:
     start = reference.replace(day=1)
     if start.month == 12:
         return start, date(start.year + 1, 1, 1)
     return start, date(start.year, start.month + 1, 1)
 
 
-def _local_today(timezone_name: str) -> date:
+def local_today(timezone_name: str) -> date:
     return datetime.now(timezone.utc).astimezone(ZoneInfo(timezone_name)).date()
 
 
@@ -110,7 +110,7 @@ def _integer_map(rows: list[tuple[uuid.UUID, int]]) -> dict[uuid.UUID, int]:
 
 
 def _money_map(rows: list[tuple[uuid.UUID, object]]) -> dict[uuid.UUID, Decimal]:
-    return {key: _money(value) for key, value in rows}
+    return {key: money_decimal(value) for key, value in rows}
 
 
 def _import_summary(
@@ -413,7 +413,7 @@ def _recent_movements(
             building_name=row.name,
             apartment_label=row.unit_code or row.number,
             description=row.title,
-            amount=_money(row.original_amount),
+            amount=money_decimal(row.original_amount),
             kind="Borç",
         )
         for row in charges
@@ -425,7 +425,7 @@ def _recent_movements(
             building_name=row.name,
             apartment_label=row.unit_code or row.number,
             description=row.description or row.reference or "Ödeme",
-            amount=_money(row.amount),
+            amount=money_decimal(row.amount),
             kind="Ödeme",
         )
         for row in payments
@@ -448,8 +448,8 @@ def get_organization_dashboard(
     timezone_name: str,
     reference_date: date | None = None,
 ) -> OrganizationDashboard:
-    today = reference_date or _local_today(timezone_name)
-    month_start, month_end = _month_range(today)
+    today = reference_date or local_today(timezone_name)
+    month_start, month_end = month_range(today)
     now = datetime.now(timezone.utc)
     (
         buildings,
@@ -464,7 +464,7 @@ def get_organization_dashboard(
         month_start=month_start,
         month_end=month_end,
     )
-    current_month_charges = _money(
+    current_month_charges = money_decimal(
         session.execute(
             select(func.coalesce(func.sum(Charge.original_amount), 0)).where(
                 Charge.organization_id == organization_id,
