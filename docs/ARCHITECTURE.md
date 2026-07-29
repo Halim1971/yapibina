@@ -231,19 +231,37 @@ Allocation toplamı gibi tablolar arası kurallar transaction içinde service do
 
 Marka çözümleme merkezi bir `BrandingService` üzerinden yapılır. Öncelik:
 
-1. Aktif organization branding değeri
-2. Yapıbina varsayılanı
+1. Doğrulanmış hostname tenant’ına ait organization branding değeri
+2. Organization adı ve iletişim fallback’i
+3. Güvenli varsayılan renk paleti
 
 Varsayılan palet:
 
 ```text
---color-primary: #0f3f3f
---color-secondary: #d4d9d5
---color-surface: #f4f4f4
---color-white: #ffffff
+--brand-primary: #0f3f3f
+--brand-secondary: #d4d9d5
+--brand-background: #f4f4f4
+--brand-surface: #ffffff
+--brand-text: #0f3f3f
 ```
 
-Renk değerleri güvenli biçimde doğrulanır ve yalnızca izin verilen CSS custom property değerleri olarak üretilir. Her müşteri için ayrı template veya CSS kopyası oluşturulmaz. Logo ve favicon, organization kapsamlı document kayıtları üzerinden servis edilir.
+Renk değerleri güvenli biçimde doğrulanır ve yalnızca izin verilen CSS custom
+property değerleri olarak üretilir. Her müşteri için ayrı template veya CSS
+kopyası oluşturulmaz. Logo, organization kapsamlı private asset storage üzerinden
+servis edilir; favicon yönetimi bu aşamanın kapsamı değildir.
+
+Effective branding typed service/read-model katmanında çözülür; Flask request,
+session, form veya Jinja nesnesine bağlı değildir. Tenant login, organization ve
+resident taşıma katmanları aynı sonucu kullanır. Platform administration Yapıbina
+fallback markasında kalır. Gelecekte mobil istemci sözleşmesi de aynı servisten
+üretilecektir; bu aşamada JSON API yoktur.
+
+Logo MVP storage’ı `instance/branding_assets/<organization UUID>/` altında,
+public static ve executable dizinlerin dışında tutulur. Storage key kullanıcı
+dosya adından türetilmez. İçerik Pillow ile doğrulanır; PNG, JPEG ve WebP
+desteklenir, SVG reddedilir. Yeni logo ve database commit’i başarılı olduktan
+sonra eski asset temizlenir. Object storage/transaction atomikliği ileride storage
+adapter’ı ile güçlendirilebilir.
 
 ## 11. Dosya storage yaklaşımı
 

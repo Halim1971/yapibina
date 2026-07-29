@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "components/nav.html" import resident_nav %}
+{% from "components/nav.html" import resident_nav with context %}
 {% block title %}Hesap hareketlerim{% endblock %}
 {% block navigation %}{{ resident_nav(selected.id if selected else none) }}{% endblock %}
 {% block content %}

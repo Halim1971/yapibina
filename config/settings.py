@@ -64,6 +64,10 @@ class BaseConfig:
         "IMPORT_EXTRACTED_MAX_BYTES",
         52_428_800,
     )
+    BRANDING_LOGO_MAX_BYTES = _environment_int(
+        "BRANDING_LOGO_MAX_BYTES",
+        2_097_152,
+    )
 
     WEAK_SECRET_KEYS: ClassVar[frozenset[str]] = frozenset(
         {

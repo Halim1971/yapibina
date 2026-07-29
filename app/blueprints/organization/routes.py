@@ -1,14 +1,27 @@
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Callable
 from datetime import date, datetime, timezone
+from pathlib import Path
 from typing import Any
 
-from flask import abort, current_app, flash, g, redirect, render_template, request, url_for
+from flask import (
+    abort,
+    current_app,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from sqlalchemy import or_, select
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.auth.decorators import organization_admin_required
 from app.blueprints.organization import organization_blueprint
@@ -18,6 +31,7 @@ from app.blueprints.organization.forms import (
     ChargeBatchCreateForm,
     DuesPeriodFilterForm,
     MembershipForm,
+    OrganizationBrandingForm,
     PaymentCreateForm,
     UserForm,
 )
@@ -47,6 +61,14 @@ from app.services.dues_dashboard import (
 from app.services.organization_apartment_detail import (
     get_organization_apartment_detail,
 )
+from app.services.organization_branding import (
+    delete_logo,
+    get_effective_branding,
+    resolve_logo_path,
+    store_logo,
+    update_organization_branding,
+    validate_logo,
+)
 from app.services.organization_building_detail import (
     get_organization_building_detail,
 )
@@ -70,6 +92,8 @@ from app.services.user_management import (
     deactivate_membership,
     resolve_or_create_user,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def _organization_id() -> uuid.UUID:
@@ -261,6 +285,139 @@ def resident_detail(resident_id: uuid.UUID) -> str:
     except ServiceValidationError:
         abort(404)
     return render_template("organization/resident_detail.html", detail=detail)
+
+
+def _branding_storage_root() -> Path:
+    return Path(current_app.instance_path) / "branding_assets"
+
+
+@organization_blueprint.route("/settings/branding", methods=["GET", "POST"])
+@organization_admin_required
+def branding_settings() -> Any:
+    organization_id = _organization_id()
+    effective = get_effective_branding(db.session, organization_id=organization_id)
+    form = OrganizationBrandingForm()
+    if request.method == "GET":
+        form.display_name.data = effective.display_name
+        form.short_name.data = effective.short_name
+        form.primary_color.data = effective.primary_color
+        form.secondary_color.data = effective.secondary_color
+        form.background_color.data = effective.background_color
+        form.surface_color.data = effective.surface_color
+        form.support_email.data = effective.support_email
+        form.support_phone.data = effective.support_phone
+        form.website_url.data = effective.website_url
+        form.footer_text.data = effective.footer_text
+        form.panel_title.data = effective.panel_title
+        form.login_message.data = effective.login_message
+    if form.validate_on_submit():
+        current_logo = effective.logo_asset_key
+        new_logo: str | None = None
+        upload = form.logo.data
+        try:
+            if upload is not None and upload.filename:
+                maximum = int(current_app.config["BRANDING_LOGO_MAX_BYTES"])
+                content = upload.stream.read(maximum + 1)
+                validated = validate_logo(content, maximum_bytes=maximum)
+                new_logo = store_logo(
+                    _branding_storage_root(),
+                    organization_id=organization_id,
+                    logo=validated,
+                )
+            update = update_organization_branding(
+                db.session,
+                organization_id=organization_id,
+                display_name=form.display_name.data,
+                short_name=form.short_name.data,
+                primary_color=form.primary_color.data,
+                secondary_color=form.secondary_color.data,
+                background_color=form.background_color.data,
+                surface_color=form.surface_color.data,
+                support_email=form.support_email.data,
+                support_phone=form.support_phone.data,
+                website_url=form.website_url.data,
+                footer_text=form.footer_text.data,
+                logo_asset_key=new_logo or current_logo,
+                panel_title=form.panel_title.data,
+                login_message=form.login_message.data,
+            )
+            db.session.commit()
+        except (ServiceValidationError, ValueError) as error:
+            db.session.rollback()
+            if new_logo is not None:
+                try:
+                    delete_logo(
+                        _branding_storage_root(),
+                        organization_id=organization_id,
+                        asset_key=new_logo,
+                    )
+                except (OSError, ServiceValidationError):
+                    logger.warning(
+                        "Rejected branding logo cleanup failed",
+                        extra={"organization_id": str(organization_id)},
+                    )
+            form.form_errors.append(str(error))
+        except SQLAlchemyError:
+            db.session.rollback()
+            if new_logo is not None:
+                try:
+                    delete_logo(
+                        _branding_storage_root(),
+                        organization_id=organization_id,
+                        asset_key=new_logo,
+                    )
+                except (OSError, ServiceValidationError):
+                    logger.warning(
+                        "Failed branding logo cleanup failed",
+                        extra={"organization_id": str(organization_id)},
+                    )
+            logger.exception(
+                "Branding update failed",
+                extra={"organization_id": str(organization_id)},
+            )
+            raise
+        else:
+            if new_logo is not None and update.previous_logo_asset_key != new_logo:
+                try:
+                    delete_logo(
+                        _branding_storage_root(),
+                        organization_id=organization_id,
+                        asset_key=update.previous_logo_asset_key,
+                    )
+                except (OSError, ServiceValidationError):
+                    logger.warning(
+                        "Previous branding logo cleanup failed",
+                        extra={"organization_id": str(organization_id)},
+                    )
+            flash("Marka ayarları güncellendi.", "success")
+            return redirect(url_for("organization.branding_settings"))
+    return render_template(
+        "organization/branding_settings.html",
+        form=form,
+        effective=effective,
+    )
+
+
+@organization_blueprint.get("/branding/logo")
+def branding_logo() -> Any:
+    tenant = getattr(g, "tenant", None)
+    if tenant is None:
+        abort(404)
+    organization_id = uuid.UUID(tenant.organization_id)
+    effective = get_effective_branding(db.session, organization_id=organization_id)
+    if effective.logo_asset_key is None:
+        abort(404)
+    try:
+        path = resolve_logo_path(
+            _branding_storage_root(),
+            organization_id=organization_id,
+            asset_key=effective.logo_asset_key,
+        )
+    except ServiceValidationError:
+        abort(404)
+    if not path.is_file():
+        abort(404)
+    return send_file(path, conditional=True, max_age=3600)
 
 
 @organization_blueprint.route("/buildings/<uuid:building_id>/edit", methods=["GET", "POST"])

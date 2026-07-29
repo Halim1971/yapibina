@@ -44,7 +44,8 @@ Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
 - Organization, building ve user listelerinde sayfalama ve kapsamlı arama
 - Decimal tabanlı ChargeBatch, Charge, Payment ve PaymentAllocation çekirdeği
 - Tenant-scoped aidat posting, ödeme mahsup, bakiye ve reversal servisleri
-- Varsayılan Yapıbina tema değişkenleri
+- Tenant hostname’e göre marka adı, logo, renk ve destek bilgisi sağlayan
+  white-label branding temeli
 - Pytest, Ruff ve mypy yapılandırması
 
 ## Gereksinimler
@@ -244,6 +245,27 @@ azaltmaz. Bakiye hareketinde charge borcu artırır; allocation timezone-aware
 `created_at` anında borcu azaltır. Charge ve payment listeleri bağımsız arama,
 allowlist sıralama ve 20/50/100 kayıtlık server-side pagination kullanır.
 Apartment CRUD, ödeme/tahakkuk değiştirme veya JSON API bu kapsamda yoktur.
+
+## White-label marka ayarları
+
+Organization admin `/organization/settings/branding` ekranından kendi tenant’ının
+görünen adını, kısa adını, renklerini, destek bilgilerini, footer metnini ve
+logosunu yönetebilir. Tenant login, organization ve resident ekranları doğrulanmış
+hostname’in effective branding read-model’ini kullanır. Branding kaydı yoksa
+organization adı ve güvenli varsayılan palet kullanılır; platform ekranları
+Yapıbina temasında kalır.
+
+Logolar instance altındaki public/executable olmayan, organization-scope
+`branding_assets` alanında rastgele adla saklanır. Yalnız içeriği Pillow ile
+doğrulanmış PNG, JPEG ve WebP kabul edilir; SVG reddedilir. Varsayılan üst sınır
+2 MB’dir ve `BRANDING_LOGO_MAX_BYTES` ile değiştirilebilir. Yeni logo ve database
+güncellemesi başarılı olmadan eski logo kaldırılmaz.
+
+Branding Yapıbina’ya ait yerel tenant configuration’dır. Standart veri importer’ı
+branding oluşturmaz, değiştirmez veya silmez. Gelecekte mobil istemciler de aynı
+transport-independent effective branding servisinden yararlanacaktır; bu aşamada
+JSON API veya mobil asset manifesti yoktur. DNS ownership, domain provisioning ve
+TLS otomasyonu da bu kapsamda değildir.
 
 ## Organization resident detayı
 

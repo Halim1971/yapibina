@@ -3,13 +3,18 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}Yapıbina{% endblock %}</title>
+    <title>{% block title %}{{ branding.display_name }}{% endblock %}</title>
     <style>
       :root {
-        --color-primary: {{ theme.primary }};
-        --color-secondary: {{ theme.secondary }};
-        --color-surface: {{ theme.surface }};
-        --color-white: {{ theme.white }};
+        --brand-primary: {{ branding.primary_color }};
+        --brand-secondary: {{ branding.secondary_color }};
+        --brand-background: {{ branding.background_color }};
+        --brand-surface: {{ branding.surface_color }};
+        --brand-text: {{ branding.text_color }};
+        --color-primary: var(--brand-primary);
+        --color-secondary: var(--brand-secondary);
+        --color-surface: var(--brand-background);
+        --color-white: var(--brand-surface);
       }
     </style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
@@ -24,6 +29,14 @@
       {% endwith %}
       {% block content %}{% endblock %}
     </main>
+    {% if branding.footer_text or branding.support_email or branding.support_phone or branding.website_url %}
+      <footer class="site-footer">
+        {% if branding.footer_text %}<span>{{ branding.footer_text }}</span>{% endif %}
+        {% if branding.support_email %}<a href="mailto:{{ branding.support_email }}">{{ branding.support_email }}</a>{% endif %}
+        {% if branding.support_phone %}<span>{{ branding.support_phone }}</span>{% endif %}
+        {% if branding.website_url %}<a href="{{ branding.website_url }}" rel="noopener noreferrer">Web sitesi</a>{% endif %}
+      </footer>
+    {% endif %}
     <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
   </body>
 </html>

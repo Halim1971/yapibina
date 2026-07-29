@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav with context %}
+{% block title %}Marka Ayarları · {{ branding.display_name }}{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel branding-settings">
+  <header class="section-header">
+    <div><h1>Marka Ayarları</h1><p class="muted">Tenant web görünümünü ve destek bilgilerini yönetin.</p></div>
+  </header>
+  {% if form.form_errors %}<div class="alert" role="alert">{% for error in form.form_errors %}<p>{{ error }}</p>{% endfor %}</div>{% endif %}
+  <form method="post" enctype="multipart/form-data" class="management-form" novalidate>
+    {{ form.hidden_tag() }}
+    {% for field in (form.display_name, form.short_name, form.panel_title, form.login_message, form.primary_color, form.secondary_color, form.background_color, form.surface_color, form.support_email, form.support_phone, form.website_url, form.footer_text, form.logo) %}
+      <div class="field">{{ field.label }}{{ field() }}{% for error in field.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</div>
+    {% endfor %}
+    {% if effective.logo_asset_key %}<div class="logo-preview"><span>Mevcut logo</span><img class="brand-logo preview-logo" src="{{ url_for('organization.branding_logo') }}" alt="{{ effective.display_name }} logosu"></div>{% endif %}
+    <p class="muted">Logo PNG, JPEG veya WebP olmalı; en fazla {{ config.BRANDING_LOGO_MAX_BYTES // 1048576 }} MB.</p>
+    <button class="button" type="submit">Marka Ayarlarını Kaydet</button>
+  </form>
+</section>
+{% endblock %}

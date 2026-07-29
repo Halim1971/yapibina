@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "components/nav.html" import organization_nav %}
+{% from "components/nav.html" import organization_nav with context %}
 {% block title %}İçe Aktarma Detayı{% endblock %}
 {% block navigation %}{{ organization_nav() }}{% endblock %}
 {% block content %}

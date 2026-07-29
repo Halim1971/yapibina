@@ -52,3 +52,7 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Tahakkuk/ödeme geçmişleri ve allocation temelli deterministik bakiye hareketleri
 - Organization admin için tenant-scoped Resident Detail, çoklu aktif daire
   seçimi ve apartment finans read-model’inin yeniden kullanımı
+- Tenant login, organization ve resident ekranlarında effective white-label
+  branding; organization admin marka ayarları ve güvenli logo yükleme akışı
+- Organization branding alanlarını genişleten Alembic migration’ı ve doğrulanmış
+  PNG/JPEG/WebP içeriği için sınırlı Pillow bağımlılığı

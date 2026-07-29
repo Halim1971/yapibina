@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Giriş · Yapıbina{% endblock %}
+{% block title %}Giriş · {{ branding.display_name }}{% endblock %}
 {% block content %}
   <section class="auth-card">
     <header>
-      <h1>Yapıbina</h1>
-      <p>Hesabınıza güvenli biçimde giriş yapın.</p>
+      {% if branding.logo_asset_key %}<img class="brand-logo login-logo" src="{{ url_for('organization.branding_logo') }}" alt="{{ branding.display_name }} logosu">{% else %}<span class="brand-fallback">{{ branding.short_name[:1] }}</span>{% endif %}
+      <h1>{{ branding.display_name }}</h1>
+      <p>{{ branding.login_message }}</p>
     </header>
 
     {% with messages = get_flashed_messages(category_filter=["error"]) %}

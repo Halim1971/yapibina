@@ -7,7 +7,7 @@ from typing import Final
 from flask import Flask, g
 
 from app.extensions import db
-from app.models import OrganizationBranding
+from app.services.organization_branding import get_effective_branding
 
 DEFAULT_THEME: Final[dict[str, str]] = {
     "primary": "#0f3f3f",
@@ -29,24 +29,17 @@ def format_try(value: Decimal) -> str:
 def register_context_processors(app: Flask) -> None:
     @app.context_processor
     def default_theme() -> dict[str, object]:
-        theme = DEFAULT_THEME.copy()
         tenant = getattr(g, "tenant", None)
-        if tenant is not None:
-            branding = db.session.scalar(
-                db.select(OrganizationBranding).where(
-                    OrganizationBranding.organization_id == uuid.UUID(tenant.organization_id)
-                )
-            )
-            if branding is not None:
-                theme.update(
-                    {
-                        key: value
-                        for key, value in {
-                            "primary": branding.primary_color,
-                            "secondary": branding.secondary_color,
-                            "surface": branding.surface_color,
-                        }.items()
-                        if value
-                    }
-                )
-        return {"theme": theme, "format_try": format_try}
+        branding = get_effective_branding(
+            db.session,
+            organization_id=(
+                uuid.UUID(tenant.organization_id) if tenant is not None else None
+            ),
+        )
+        theme = {
+            "primary": branding.primary_color,
+            "secondary": branding.secondary_color,
+            "surface": branding.background_color,
+            "white": branding.surface_color,
+        }
+        return {"branding": branding, "theme": theme, "format_try": format_try}

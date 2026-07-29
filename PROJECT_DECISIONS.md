@@ -768,6 +768,24 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
   kullanıcı girdilerini aktarır; aynı servis gelecekte mobil/API taşıma katmanından
   da çağrılabilir.
 
+## D-074 — Branding importer verisinden ayrı tenant-local configuration’dır
+
+- **Karar:** Organization branding, Yapıbina içinde organization başına tek
+  `OrganizationBranding` kaydıyla yönetilen yerel configuration’dır. Building,
+  Apartment ve resident ana verilerinin aksine Apsiyon/importer source-of-truth
+  alanına dahil değildir; import işlemi branding’i oluşturmaz, değiştirmez veya
+  silmez.
+- **Effective değer:** Tenant hostname doğrulandıktan sonra organization ile
+  branding tek sorguda çözülür. Eksik alanlar organization iletişim bilgilerine
+  veya güvenli Yapıbina paletine düşer. Platform bağlamı tenant branding kullanmaz.
+- **Asset sınırı:** Logo, public static dizini dışında organization-scope rastgele
+  storage key ile tutulur ve yalnız tenant-scoped endpoint üzerinden servis edilir.
+  Uzantı/MIME beyanına güvenilmez; Pillow ile doğrulanan PNG, JPEG ve WebP kabul
+  edilir. Yeni database kaydı commit edilmeden eski logo silinmez.
+- **İstemci bağımsızlığı:** `EffectiveBranding` Flask/Jinja’dan bağımsız typed
+  read-model’dir. Gelecekte web ve mobil API aynı servisi kullanacaktır; bu karar
+  henüz JSON endpoint veya mobil asset manifesti oluşturmaz.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

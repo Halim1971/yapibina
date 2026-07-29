@@ -1,11 +1,11 @@
 {% extends "base.html" %}
-{% from "components/nav.html" import organization_nav %}
+{% from "components/nav.html" import organization_nav with context %}
 {% block title %}Yeni Paket Yükle{% endblock %}
 {% block navigation %}{{ organization_nav() }}{% endblock %}
 {% block content %}
 <section class="panel">
   <h1>Yeni Paket Yükle</h1>
-  <p>Yapıbina standart veri sözleşmesine uygun ZIP paketini seçin. Ön kontrol tamamlanmadan hiçbir kayıt değiştirilmez.</p>
+  <p>Standart veri sözleşmesine uygun ZIP paketini seçin. Ön kontrol tamamlanmadan hiçbir kayıt değiştirilmez.</p>
   <form method="post" enctype="multipart/form-data" class="management-form">
     {{ form.hidden_tag() }}
     <div class="field">

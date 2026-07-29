@@ -19,6 +19,7 @@ from wtforms.validators import (
     Length,
     NumberRange,
     Optional,
+    Regexp,
 )
 
 from app.models import (
@@ -41,6 +42,61 @@ MONTH_CHOICES = [
     (11, "Kasım"),
     (12, "Aralık"),
 ]
+HEX_COLOR = r"^#[0-9a-fA-F]{6}$"
+
+
+class OrganizationBrandingForm(FlaskForm):  # type: ignore[misc]
+    display_name = StringField(
+        "Görünen marka adı", validators=[Optional(), Length(max=160)]
+    )
+    short_name = StringField("Kısa ad", validators=[Optional(), Length(max=60)])
+    primary_color = StringField(
+        "Ana renk",
+        validators=[
+            Optional(),
+            Regexp(HEX_COLOR, message="Renk #RRGGBB biçiminde olmalıdır."),
+        ],
+    )
+    secondary_color = StringField(
+        "İkincil renk",
+        validators=[
+            Optional(),
+            Regexp(HEX_COLOR, message="Renk #RRGGBB biçiminde olmalıdır."),
+        ],
+    )
+    background_color = StringField(
+        "Arka plan rengi",
+        validators=[
+            Optional(),
+            Regexp(HEX_COLOR, message="Renk #RRGGBB biçiminde olmalıdır."),
+        ],
+    )
+    surface_color = StringField(
+        "Yüzey rengi",
+        validators=[
+            Optional(),
+            Regexp(HEX_COLOR, message="Renk #RRGGBB biçiminde olmalıdır."),
+        ],
+    )
+    support_email = EmailField(
+        "Destek e-postası", validators=[Optional(), Email(), Length(max=254)]
+    )
+    support_phone = StringField(
+        "Destek telefonu", validators=[Optional(), Length(max=40)]
+    )
+    website_url = StringField(
+        "Web sitesi", validators=[Optional(), Length(max=500)]
+    )
+    footer_text = TextAreaField(
+        "Footer metni", validators=[Optional(), Length(max=300)]
+    )
+    panel_title = StringField(
+        "Panel başlığı", validators=[Optional(), Length(max=120)]
+    )
+    login_message = TextAreaField(
+        "Giriş mesajı", validators=[Optional(), Length(max=500)]
+    )
+    logo = FileField("Logo")
 
 
 class BuildingForm(FlaskForm):  # type: ignore[misc]
