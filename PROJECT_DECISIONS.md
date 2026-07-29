@@ -445,11 +445,50 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Ürün politikası kullanılmamış ödemenin
   otomatik mahsup edilmesini veya resident onayıyla dağıtılmasını gerektirirse.
 
+## D-051 — Yapıbina Apsiyon'un yerine geçmez
+
+- **Karar:** Apsiyon ana operasyon ve veri kaynağı olarak kalır. Yapıbina,
+  aktarılan doğrulanmış veriyi sadeleştiren white-label read-model platformudur.
+- **Gerekçe:** Malik/kiracı tarihçesi, muhasebe, banka ve tahsilat gibi kapsamlı
+  operasyon kurallarını ikinci kez kurmadan dört temel kullanıcı değerine
+  odaklanmak.
+- **MVP kapsamı:** Borç/ödeme görünümü ile gider ve duyuru sunumuna uygun standart
+  veri sözleşmesi.
+- **Sonraya bırakılan alternatif:** Yapıbina'yı tam operasyon veya muhasebe
+  sistemine dönüştürmek.
+- **Yeniden değerlendirme koşulu:** Ürün misyonunun ticari olarak açık biçimde
+  değiştirilmesi ve bunun için ayrı mimari onay verilmesi.
+
+## D-052 — Kaynak adapter ile standart ara format ayrıdır
+
+- **Karar:** Apsiyon raporları önce adapter tarafından Yapıbina standart Excel
+  sözleşmesine normalize edilir; importer yalnız bu sözleşmeye bağlanır.
+- **Gerekçe:** Kaynak kolon/rapor değişikliklerini uygulama ve importer
+  çekirdeğinden izole etmek.
+- **MVP kapsamı:** Sites, residents_and_units, charges, payments, expenses ve
+  announcements veri kümeleri; stabil source key ve idempotent upsert anlamı.
+- **Sonraya bırakılan alternatif:** Importer'ı doğrudan Apsiyon'un mevcut
+  kolonlarına bağlamak.
+- **Yeniden değerlendirme koşulu:** Yeni kaynak sistemler ortak formatın
+  sürümlenmesini veya genişletilmesini gerektirirse.
+
+## D-053 — Demo paketi deterministik ve manifest doğrulamalıdır
+
+- **Karar:** Kurgusal demo Excel dosyaları sabit seed ve sabit metadata ile
+  üretilir; manifest satır sayısı ve SHA-256 değerlerini taşır.
+- **Gerekçe:** Ürün demosu, importer fixture'ı ve gelecekteki adapter sözleşmesi
+  için tekrarlanabilir, değişikliği izlenebilir veri sağlamak.
+- **MVP kapsamı:** Beş site, 50 bağımsız bölüm/resident, Şubat–Temmuz 2026,
+  kontrollü finans senaryoları, giderler ve duyurular.
+- **Sonraya bırakılan alternatif:** Elle düzenlenen veya rastgele her çalışmada
+  değişen demo dosyaları.
+- **Yeniden değerlendirme koşulu:** Schema version yükseldiğinde veya yeni demo
+  senaryoları ürün kabul kriterine girdiğinde.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:
 
-- Kesin CSV/Excel formatları ve Excel'in MVP zorunluluğu
 - Platform yönetim hostname'i ve tenant entry hostname'i
 - Certbot challenge yöntemi ve manuel production runbook ayrıntıları
 - Bilinmeyen host için 421 mi 404 mü

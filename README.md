@@ -1,8 +1,9 @@
 # Yapıbina
 
-Yapıbina; kapsamlı bina yönetim sistemlerini fazla karmaşık bulan küçük ve orta
-ölçekli apartmanlar ile yönetim firmaları için geliştirilen sade, güvenilir ve
-şeffaf bir white-label SaaS ürünüdür.
+Yapıbina, Apsiyon'un yerine geçen bir operasyon veya muhasebe sistemi değildir.
+Apsiyon ana veri kaynağı olarak kalırken Yapıbina doğrulanmış veriyi
+sadeleştiren ve yönetim firmasının markası altında modern ekranlarla sunan
+white-label bir read-model platformudur.
 
 Resident deneyimi dört ana işleve odaklanacaktır:
 
@@ -13,7 +14,11 @@ Resident deneyimi dört ana işleve odaklanacaktır:
 
 Her yönetim firması kendi markası ve doğrulanmış alan adıyla aynı uygulamayı
 kullanabilecektir. Temel tenant, domain, üyelik, bina ve daire modelleri
-hazırdır; finansal işlevler henüz bulunmamaktadır.
+ile aidat/ödeme read-model ekranları hazırdır.
+
+Planlanan veri akışı Apsiyon raporları → Apsiyon adapter → Yapıbina standart
+ara veri formatı → Yapıbina importer → yönetim/resident ekranlarıdır. Kaynak
+rapor kolonları uygulama modeline doğrudan bağlanmaz.
 
 ## Mevcut durum
 
@@ -151,6 +156,23 @@ ruff check .
 mypy
 ```
 
+## Demo veri paketi
+
+`demo_data/`, 1 Şubat–31 Temmuz 2026 dönemine ait beş kurgusal site, 50
+bağımsız bölüm ve 50 resident içeren standart Excel veri paketidir. Kontrollü
+borç/ödeme senaryolarına ek olarak gider ve duyuru veri kümeleri içerir.
+
+```bash
+python scripts/generate_demo_data.py
+python scripts/validate_demo_data.py
+```
+
+Üretim sabit seed ile byte düzeyinde deterministiktir. `manifest.json` her Excel
+dosyasının satır sayısını ve SHA-256 değerini taşır. Veriler tamamen kurgusaldır;
+e-postalar yalnız `example.com`, telefonlar yalnız `DEMO-` biçimindedir.
+Dosyalar henüz uygulamaya import edilmez. Gerçek Apsiyon adapter'ı ve tarayıcı
+otomasyonu oluşturulmamıştır.
+
 ## Kimlik doğrulama
 
 Giriş yalnız kullanıcının yetkili olduğu host üzerinde çalışır:
@@ -182,7 +204,7 @@ app/
 config/             Ortam yapılandırmaları
 docs/               Onaylanmış mimari belgeler
 instance/           Git dışı yerel runtime verileri
-scripts/            İleride eklenecek operasyon yardımcıları
+scripts/            Demo veri üretim ve doğrulama yardımcıları
 tests/              Unit, integration ve functional testler
 migrations/         Alembic migration ortamı ve ilk tenant şeması
 ```
@@ -194,6 +216,7 @@ subscription modelleri yoktur. Kayıt, parola
 sıfırlama, e-posta daveti/doğrulaması, MFA, resident gider/duyuru ekranları,
 online ödeme,
 dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
-Docker ve background job altyapısı oluşturulmamıştır.
+Docker ve background job altyapısı oluşturulmamıştır. Demo Excel paketi mevcut
+olsa da importer veya Apsiyon adapter henüz bulunmaz.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.

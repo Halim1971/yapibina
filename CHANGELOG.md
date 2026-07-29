@@ -34,3 +34,6 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Aktif daire üyeliğiyle sınırlı read-only resident finans ekranları
 - Resident güncel borç, son ödemeler, hesap ekstresi ve ayrı kullanılmamış ödeme özeti
 - Çoklu daire seçimi, running balance ve resident finans pagination desteği
+- Adapter-bağımsız standart Excel veri sözleşmesi ve deterministik demo paketi
+- Beş site, 50 daire/resident ve kontrollü altı aylık finans senaryoları
+- Manifest satır/hash doğrulamalı demo generator ve validator araçları

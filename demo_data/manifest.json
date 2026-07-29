@@ -1,0 +1,145 @@
+{
+  "currency": "TRY",
+  "dataset_name": "Yapıbina Kontrollü Demo Veri Paketi",
+  "dataset_version": "1.0.0",
+  "date_range_end": "2026-07-31",
+  "date_range_start": "2026-02-01",
+  "files": [
+    {
+      "relative_path": "sites.xlsx",
+      "row_count": 5,
+      "sha256": "541dfa657893aba82b38fffa60a6ff9bf464bb5c855c980ed12d250f62933410"
+    },
+    {
+      "relative_path": "ulubatli-sitesi/residents_and_units.xlsx",
+      "row_count": 10,
+      "sha256": "6b0a3ece5f0ddc22cc90b6a049d4d27c9bedf201918bdf73d5a213fd69a73ba2"
+    },
+    {
+      "relative_path": "ulubatli-sitesi/charges.xlsx",
+      "row_count": 61,
+      "sha256": "6be378432ee3587fd5557c957cb7d5c4aa3a37b20bd1ba02d754842da06326f2"
+    },
+    {
+      "relative_path": "ulubatli-sitesi/payments.xlsx",
+      "row_count": 51,
+      "sha256": "050e1e3de02beaabd4ffa2170eeaf1bf70684e25f32e5245bff79495bae17805"
+    },
+    {
+      "relative_path": "ulubatli-sitesi/expenses.xlsx",
+      "row_count": 24,
+      "sha256": "242b2feb8faa03918462c5435fa943a9d62b5ab21c369ec2921404aea972ed74"
+    },
+    {
+      "relative_path": "ulubatli-sitesi/announcements.xlsx",
+      "row_count": 7,
+      "sha256": "bf702b140f7c99dd3ce5d4df237e4ff5556ec0357ec1a66b541359850855b687"
+    },
+    {
+      "relative_path": "cinarpark-apartmani/residents_and_units.xlsx",
+      "row_count": 10,
+      "sha256": "ab0a88f085702abbf0f3245b2ee91196180fce50dc98f4beecd3b77fe8d1781a"
+    },
+    {
+      "relative_path": "cinarpark-apartmani/charges.xlsx",
+      "row_count": 61,
+      "sha256": "08d9a823612d923bb816c9d69924baeb1ab194fa217f535ad6ef49d6009346f7"
+    },
+    {
+      "relative_path": "cinarpark-apartmani/payments.xlsx",
+      "row_count": 51,
+      "sha256": "90815f1f02a341cc06b245187d19d2b779f2a1382ff831b1f1af98511791db07"
+    },
+    {
+      "relative_path": "cinarpark-apartmani/expenses.xlsx",
+      "row_count": 24,
+      "sha256": "d6d3e6fe57dd1ef680e66f61f76a50d0fbe83ec7447c4cf0bcf907a3f0b9d666"
+    },
+    {
+      "relative_path": "cinarpark-apartmani/announcements.xlsx",
+      "row_count": 7,
+      "sha256": "d3ed20174ad3fc44bbe3a5ddaba12629a0201be7ff0b21edb28767460ec3771b"
+    },
+    {
+      "relative_path": "mavisehir-konutlari/residents_and_units.xlsx",
+      "row_count": 10,
+      "sha256": "bd7928a72176f25b346cbbee650bb6e6e0580b635c9a9acd4ffd736a3b88d733"
+    },
+    {
+      "relative_path": "mavisehir-konutlari/charges.xlsx",
+      "row_count": 61,
+      "sha256": "0a908be5c9ba3a66d0bf7f179a7672d0cbe837faea8e76b340b11df19a2fd1b9"
+    },
+    {
+      "relative_path": "mavisehir-konutlari/payments.xlsx",
+      "row_count": 51,
+      "sha256": "ef5179b75c08865b406f52b579abf9c284ccbe58bd030ed5045b821a02d08432"
+    },
+    {
+      "relative_path": "mavisehir-konutlari/expenses.xlsx",
+      "row_count": 24,
+      "sha256": "bcb5ad73915b2fd9e69011a937d4bb1b0229acc4af53738dfa707c305ca5635c"
+    },
+    {
+      "relative_path": "mavisehir-konutlari/announcements.xlsx",
+      "row_count": 7,
+      "sha256": "e22547f860e433b860925b36f1945e17a2eb254c5ce609e9bde72a7aa28e67be"
+    },
+    {
+      "relative_path": "ihlamur-residence/residents_and_units.xlsx",
+      "row_count": 10,
+      "sha256": "3b49ba809d3d853ddd44ec9af71240f2147578d25f7b1060e49b648d75802fd3"
+    },
+    {
+      "relative_path": "ihlamur-residence/charges.xlsx",
+      "row_count": 61,
+      "sha256": "e561269fc59b36f8d7e6aa55b595f5dbc46707eaf60a9a1585da5e3cdf783804"
+    },
+    {
+      "relative_path": "ihlamur-residence/payments.xlsx",
+      "row_count": 51,
+      "sha256": "20a5f85338c5fb8d2181f05d33b4eebd3621348ea41c14c5160d9d89a7072b86"
+    },
+    {
+      "relative_path": "ihlamur-residence/expenses.xlsx",
+      "row_count": 24,
+      "sha256": "61451d39c820b710b32770362e60f7ec2db39b1f20da81bcf6bc7071285b5d47"
+    },
+    {
+      "relative_path": "ihlamur-residence/announcements.xlsx",
+      "row_count": 7,
+      "sha256": "d6f6c6ac4949ebb49a7851800b178181269be616bd23c451b62dcaa3642817de"
+    },
+    {
+      "relative_path": "gunes-evleri/residents_and_units.xlsx",
+      "row_count": 10,
+      "sha256": "ff67fd86a99de990fb418c69162b7ecff895f0903fcb3dd2fa17d5a6119577cb"
+    },
+    {
+      "relative_path": "gunes-evleri/charges.xlsx",
+      "row_count": 61,
+      "sha256": "24ea9caef078ddaac0194cd402976e730d00455ef36675e097aad2f86c0f81b7"
+    },
+    {
+      "relative_path": "gunes-evleri/payments.xlsx",
+      "row_count": 51,
+      "sha256": "bdb475f9d8cd48183d798d2cc5db4c9d760d23e8a935c97f0b90f26818c0bc6e"
+    },
+    {
+      "relative_path": "gunes-evleri/expenses.xlsx",
+      "row_count": 24,
+      "sha256": "c8c6e09b90f8feb52d7187213d16e8e67220e0d48a423294a02057ab22428778"
+    },
+    {
+      "relative_path": "gunes-evleri/announcements.xlsx",
+      "row_count": 7,
+      "sha256": "5bae13e7d24cc2fa2f6a3a1b4cf94b311292d09ee0b0ffe3a78fa67803d55abc"
+    }
+  ],
+  "generated_at": "2026-07-31T12:00:00+03:00",
+  "generator_seed": 20260731,
+  "resident_count": 50,
+  "schema_version": "1.0",
+  "site_count": 5,
+  "unit_count": 50
+}
