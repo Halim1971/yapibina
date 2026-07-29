@@ -44,6 +44,7 @@ from app.services.dues_dashboard import (
     get_dues_dashboard,
     list_active_buildings_for_dues,
 )
+from app.services.organization_dashboard import get_organization_dashboard
 from app.services.organization_management import (
     create_apartment,
     create_building,
@@ -83,9 +84,18 @@ def _commit_or_form_error(form: FlaskForm, action: Callable[[], object]) -> bool
 
 
 @organization_blueprint.get("/")
+@organization_blueprint.get("/dashboard")
 @organization_admin_required
 def index() -> str:
-    return render_template("organization/index.html")
+    dashboard = get_organization_dashboard(
+        db.session,
+        organization_id=_organization_id(),
+        timezone_name=current_app.config["DEFAULT_TIMEZONE"],
+    )
+    return render_template(
+        "organization/index.html",
+        dashboard=dashboard,
+    )
 
 
 @organization_blueprint.get("/buildings")

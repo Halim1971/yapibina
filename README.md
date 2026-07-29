@@ -189,6 +189,21 @@ gösterir; gerçek aktarım yalnız açık **İçe Aktar** onayından sonra ayn�
 fingerprint'e sahip geçici paketle başlar. Paketler repository dışında güvenli
 geçici alanda tutulur ve onay, vazgeçme veya hata sonrasında temizlenir.
 
+## Organization genel bakışı
+
+Organization admin giriş sonrasında `/organization/` veya
+`/organization/dashboard` üzerinde tenant-scoped operasyon özetini görür:
+bina/daire/aktif resident sayıları, güncel açık borç, içinde bulunulan ayın
+tahakkuk ve ödeme toplamları, tahsilat oranı, son başarılı/başarısız import
+durumu, ilk 10 bina özeti ve son 10 finansal hareket.
+
+Açık borç yalnız posted charge toplamından posted payment'lara bağlı geçerli
+allocation toplamı çıkarılarak hesaplanır ve sıfırın altına düşmez. Aylık ödeme
+doğrudan aynı ay tarihli posted payment toplamıdır; allocation nedeniyle ikinci
+kez sayılmaz. Aylık tahakkukta önce charge dönem alanları, bunlar yoksa
+`due_date` kullanılır. Tüm hesaplar `Decimal` ve açık `organization_id`
+kapsamıyla yürütülür.
+
 ## Kimlik doğrulama
 
 Giriş yalnız kullanıcının yetkili olduğu host üzerinde çalışır:

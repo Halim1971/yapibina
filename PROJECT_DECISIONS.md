@@ -564,6 +564,34 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Yeniden değerlendirme koşulu:** Ayrıntılı permission modeli veya onay
   workflow'u eklendiğinde.
 
+## D-060 — Dashboard finans metrikleri read-model sorgularıdır
+
+- **Karar:** Organization dashboard metrikleri kalıcı sayaç/cache alanlarında
+  değil tenant-scoped aggregate sorgulardan üretilir.
+- **Gerekçe:** Finansal doğruluk kaynağını Charge, Payment ve
+  PaymentAllocation kayıtlarında tutmak; güncelliğini yitiren özet kolonlarından
+  kaçınmak.
+- **MVP kapsamı:** Açık borç posted charge eksi geçerli allocation; aylık
+  tahakkuk period alanları veya fallback due_date; aylık tahsilat posted payment
+  tarihi; Decimal tahsilat oranı.
+- **Sonraya bırakılan alternatif:** Materialized view, projection veya cache.
+- **Yeniden değerlendirme koşulu:** Production ölçümleri aggregate sorguların
+  kabul edilen yanıt süresini aşmasını gösterirse.
+
+## D-061 — Dashboard yalnız organization admin görünümüdür
+
+- **Karar:** Genel Bakış aktif tenant context ve organization admin rolü ister;
+  platform admin, building manager, organization member ve resident otomatik
+  erişim kazanmaz.
+- **Gerekçe:** Dashboard tüm organization'ın finans ve resident özetlerini
+  içerir; bina veya daire düzeyi yetki yeterli değildir.
+- **MVP kapsamı:** Organization seçimi URL/formdan alınmaz, her sorgu açık
+  organization scope taşır ve başka tenant verisi birleşik hareketlere girmez.
+- **Sonraya bırakılan alternatif:** Building manager için yalnız atanmış
+  binaları içeren ayrı dashboard.
+- **Yeniden değerlendirme koşulu:** Organization-level ayrıntılı permission
+  modeli devreye alındığında.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

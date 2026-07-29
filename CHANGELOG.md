@@ -42,3 +42,5 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
 - Doğrulama ve dry-run destekli `flask import-standard-data` komutu
 - Organization admin için dry-run → açık onay akışlı Veri İçe Aktarma merkezi
 - Tenant-scoped import geçmişi/detayı ve güvenli geçici ZIP paket işleme
+- Organization admin için tenant-scoped operasyon ve finans genel bakış ekranı
+- Toplu sorgularla bina özeti, son import durumu ve birleşik finans hareketleri

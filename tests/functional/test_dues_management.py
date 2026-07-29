@@ -558,7 +558,7 @@ def test_default_period_and_navigation_are_visible(client: FlaskClient) -> None:
     _login(client, admin.email)
     response = client.get("/organization/dues", headers={"Host": HOST})
     assert response.status_code == 200
-    assert b"Aidatlar" in response.data
+    assert "Aidat ve Ödemeler".encode() in response.data
     assert f"{date.today().month:02d}/{date.today().year} Aidatı".encode() in response.data
     assert b"dues-row" in response.data
 
