@@ -148,6 +148,68 @@ Flask-Login oturum yönetimini sağlar. Yetkilendirme policy tabanlıdır:
 
 Bir kullanıcı birden fazla organization, bina ve daireyle ilişkili olabilir. Roller kullanıcı tablosunda global tek alan olarak tutulmaz. Resident yalnız `status=active` apartment membership bulunan daireyi ve onun binasını görebilir; sona ermiş/pasif üyelik geçmiş veriye otomatik erişim sağlamaz. Organization admin veya yetkili building manager üyeliği aktif/pasif yapabilir, fakat üyelik geçmişi fiziksel silinmez. Yetki reddi varsayılan davranıştır. IDOR koruması için hedef kayıt; ID, aktif organization ve gerekli bina/daire kapsamıyla birlikte sorgulanır.
 
+### 8.1 Gelecekteki web ve mobil taşıma katmanları
+
+Web blueprint'leri ve gelecekteki `/api/v1` blueprint'leri yalnız taşıma ve
+sunum katmanıdır. İstek doğrulama, kimlik/tenant context üretme, service çağrısı
+ve yanıt biçimlendirme yaparlar. İş kuralları, transaction sınırları ve kaynak
+yetkileri ortak domain/application service ve policy katmanında kalır.
+
+Bugünkü servis taramasında `request`, `g`, Flask session, flash, redirect,
+Flask-WTF veya Jinja bağımlılığı service katmanına sızmamıştır. Host tabanlı
+tenant resolver HTTP altyapısındadır; importer/CLI use-case'leri tenant UUID'sini
+açık ve doğrulanmış argüman olarak alır. `UserMixin` ve `user_loader` mevcut web
+session entegrasyonudur; gelecekteki API kimlik doğrulamasının service modeli
+değil, ayrı bir authentication adapter'ı olması gerekir.
+
+API authentication web session cookie'sinden ayrı tasarlanacaktır. Token tipi,
+rotation/revocation ve device session politikası uygulama aşamasında ayrıca
+kararlaştırılır. İstemciden serbest `organization_id` alınmaz. API tenant
+kimliği doğrulanmış kullanıcı kimliği, aktif membership ve istenen kaynağın
+organization scope'u birlikte kontrol edilerek üretilir. Domain/host bilgisi
+ek güvenlik ve white-label bağlamı olabilir, tek başına yetki kanıtı değildir.
+Web ve API aynı policy fonksiyonlarını kullanır.
+
+### 8.2 API sözleşme ilkeleri
+
+- API sürümü `/api/v1` URL önekiyle açıkça taşınır.
+- Kaynak kimlikleri stabil UUID string'dir.
+- Finansal değerler JSON number/float değil iki ondalıklı decimal string'dir
+  (örnek: `"1250.00"`); para birimi gerektiğinde ayrı ISO kodudur.
+- Tarih `YYYY-MM-DD`, tarih-saat UTC veya açık offset içeren ISO 8601
+  biçimindedir. Naive datetime yayımlanmaz.
+- Pagination tek biçimde `page`, `per_page` ve metadata olarak `page`,
+  `per_page`, `total`, `pages`, `has_next`, `has_previous` kullanır. Cursor
+  ihtiyacı ölçülürse yeni API sürümü veya geriye uyumlu alanla değerlendirilir.
+- Hata gövdesi en az stabil makine kodu, güvenli kullanıcı mesajı, request ID
+  ve alan hatalarını içerir; stack trace, SQL veya secret içermez.
+- HTML'e özgü flash/redirect/form error service dönüşü olmaz. Transport katmanı
+  domain exception'larını HTML veya JSON sözleşmesine çevirir.
+
+### 8.3 Announcement, Notification ve push sınırları
+
+`Announcement`, yönetici tarafından oluşturulan kalıcı içeriktir. Tenant
+scope'u zorunludur; organization geneli, building veya açıkça seçilmiş
+kullanıcılar hedeflenebilir. Aynı içerik web ve mobilde okunur.
+
+`Notification`, belirli bir kullanıcıya ait uygulama içi teslim/okunma
+kaydıdır. Tür, başlık, kısa içerik, hedef kaynak türü/UUID'si, oluşturulma,
+teslim ve okunma zamanı taşıyabilir. Bir announcement çok sayıda kullanıcı
+notification kaydı üretebilir; notification yalnız announcement'a bağlı olmak
+zorunda değildir.
+
+Push delivery ayrı altyapı concern'üdür. Notification veya announcement
+transaction'ı içinde harici push provider çağrısı yapılmaz. Kalıcı işlem
+başarılı olduktan sonra transactional outbox kaydı background worker tarafından
+işlenir. Push hatası duyuru/notification oluşturmayı geri almaz; retry,
+idempotency ve dead-letter politikası uygulanır. Device token kullanıcı ve
+fiziksel uygulama kurulumu bazında tutulur; provider/platform, son görülme,
+iptal/geçersizleşme zamanı desteklenir. Logout, provider invalid-token cevabı
+ve kullanıcı talebi token'ı devre dışı bırakabilir.
+
+Bu aşamada Announcement, Notification, DeviceToken veya Outbox modeli;
+migration, worker, push provider, JSON API ve mobil istemci uygulanmamıştır.
+
 ## 9. Finansal ledger
 
 Basit ve güvenilir bir hareket defteri yaklaşımı kullanılır. Finansal kavramlar açıkça ayrılır:

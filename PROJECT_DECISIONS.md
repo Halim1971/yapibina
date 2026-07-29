@@ -156,7 +156,8 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 
 ## D-020 — API ve Web Push MVP dışında
 
-- **Karar:** Bildirim için uygulama içi duyuru/okundu kaydı kurulur; provider portu ilerisi için ayrılır. Genel public API yapılmaz.
+- **Karar:** MVP'de JSON API veya Web Push yapılmaz. Gelecekteki Announcement,
+  Notification ve push sınırları D-067–D-071 kararlarına göre ayrı tasarlanır.
 - **Gerekçe:** Dört temel işlevi güvenle yayınlamaya odaklanmak.
 - **Alternatifler:** İlk günden Web Push ve REST/GraphQL API.
 - **Neden seçilmedi:** Kimlik, izin, retry, client ve operasyon kapsamını büyütür.
@@ -660,6 +661,76 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
 - **Sonraya bırakılan alternatif:** Ayrı finans projection servisi.
 - **Yeniden değerlendirme koşulu:** Sorgu hacmi kalıcı özet/projection
   gerektirdiğinde.
+
+## D-067 — Web ve mobil ortak application service kullanır
+
+- **Karar:** Server-rendered web route'ları ve gelecekteki mobil API route'ları
+  aynı domain/application service ve authorization policy katmanını kullanır;
+  route'lar yalnız taşıma/presentation katmanıdır.
+- **Gerekçe:** İş kurallarının web ve mobil için çatallanmasını, farklı tenant
+  veya finans davranışları oluşmasını önlemek.
+- **MVP kapsamı:** Service katmanı Flask request/session/flash/form/Jinja
+  nesnelerinden bağımsız kalır; mevcut API yoktur.
+- **Sonraya bırakılan alternatif:** Mobil için ayrı backend/BFF.
+- **Yeniden değerlendirme koşulu:** Ölçülmüş istemci ihtiyaçları ayrı bir BFF
+  gerektirirse, ortak domain use-case'leri korunarak değerlendirilir.
+
+## D-068 — Gelecekteki API `/api/v1` ve ayrı authentication kullanır
+
+- **Karar:** JSON API `/api/v1` ile sürümlenir. Authentication web session
+  cookie'sinden ayrı bir adapter/protokol olarak tasarlanır; token türü bu
+  aşamada seçilmez.
+- **Gerekçe:** Mobil token yaşam döngüsü, revocation ve cihaz session'ları web
+  cookie güvenlik modelinden farklıdır.
+- **MVP kapsamı:** API blueprint, token veya OAuth/JWT implementasyonu yoktur.
+- **Sonraya bırakılan alternatif:** Session cookie'yi mobilde paylaşmak veya
+  sürümsüz endpoint.
+- **Yeniden değerlendirme koşulu:** Mobil istemci authentication threat model'i
+  ve operasyonel gereksinimleri onaylandığında.
+
+## D-069 — API tenant kimliği istemci seçimi değildir
+
+- **Karar:** `organization_id` istemciden serbest tenant seçimi olarak kabul
+  edilmez. Tenant; doğrulanmış kullanıcı, aktif membership, kaynak scope'u ve
+  gerektiğinde doğrulanmış host bağlamından çözülür.
+- **Gerekçe:** Header/query/body manipülasyonu ile cross-tenant erişimi ve IDOR
+  riskini önlemek.
+- **MVP kapsamı:** Stabil UUID yalnız kaynak kimliğidir; her sorgu ayrıca açık
+  organization ve authorization scope'u taşır.
+- **Sonraya bırakılan alternatif:** Güvenilen entegrasyon istemcileri için açık
+  tenant claim'i; yalnız imzalı ve server-side doğrulanmış protokolle.
+- **Yeniden değerlendirme koşulu:** Service account veya partner API kapsamı
+  tanımlandığında.
+
+## D-070 — API serialization ve pagination sözleşmesi sabittir
+
+- **Karar:** Para decimal string, tarih/tarih-saat ISO 8601 ve timezone bilgili,
+  kimlik UUID string olarak taşınır. Sayfa tabanlı listeler ortak
+  `page/per_page/total/pages/has_next/has_previous` metadata'sını ve tutarlı
+  hata gövdesini kullanır.
+- **Gerekçe:** Float hassasiyet kaybını, naive datetime belirsizliğini ve her
+  mobil ekranda farklı pagination/hata yorumunu önlemek.
+- **MVP kapsamı:** Bu kurallar belgelidir; JSON serializer/endpoint henüz yoktur.
+- **Sonraya bırakılan alternatif:** Cursor pagination ve farklı wire format.
+- **Yeniden değerlendirme koşulu:** Büyük, hızla değişen listelerde offset
+  pagination ölçülmüş tutarlılık veya performans sorunu yaratırsa.
+
+## D-071 — Announcement, Notification ve push ayrı yaşam döngüleridir
+
+- **Karar:** Announcement kalıcı hedeflenebilir içerik; Notification kullanıcıya
+  özgü teslim/okunma kaydı; push ise notification'dan bağımsız asenkron teslim
+  altyapısıdır.
+- **Gerekçe:** Push provider hatasının içerik transaction'ını geri almasını,
+  okundu durumuyla harici teslim durumunun karışmasını önlemek.
+- **MVP kapsamı:** Gelecekte bir announcement çok sayıda notification
+  üretebilir. Push transactional outbox/background worker ile gönderilir;
+  kullanıcı-cihaz token'ları iptal ve invalid-token temizliği taşır. Bu aşamada
+  model, migration, worker veya provider yoktur.
+- **Sonraya bırakılan alternatif:** Transaction içinde senkron push veya
+  announcement satırında kullanıcı okundu alanları.
+- **Yeniden değerlendirme koşulu:** Bildirim kanalları ve teslim SLA'sı
+  kesinleştiğinde outbox retry/dead-letter ve token retention politikaları
+  ayrıca kararlaştırılır.
 
 ## Kodlamadan önce kalan kararlar
 

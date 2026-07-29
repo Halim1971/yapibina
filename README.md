@@ -274,8 +274,37 @@ Bu aşamada banka hareketi, gider, belge, duyuru, audit, notification ve
 subscription modelleri yoktur. Kayıt, parola
 sıfırlama, e-posta daveti/doğrulaması, MFA, resident gider/duyuru ekranları,
 online ödeme,
-dosya yükleme, import, production PostgreSQL veritabanı, Nginx, systemd,
+gider/belge yükleme, production PostgreSQL veritabanı, Nginx, systemd,
 Docker ve background job altyapısı oluşturulmamıştır. Standart Excel importer
 mevcuttur; Apsiyon adapter henüz bulunmaz.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.
+
+## Web ve mobil istemci hazırlığı
+
+Yapıbina bugün server-rendered Flask web uygulamasıdır. Gelecekte Android ve
+iOS istemcileri aynı domain/application service katmanını kullanacaktır.
+Planlanan JSON API `/api/v1` altında sürümlenecek; ancak bu aşamada API
+blueprint'i, token authentication veya mobil uygulama oluşturulmamıştır.
+
+Yeni özellik geliştirirken aşağıdaki kontrol listesi uygulanır:
+
+- İş kuralları route, Jinja template, Flask session, flash veya form nesnesine
+  gömülmez.
+- Service sonuçları HTML'e özel olmaz; typed model/view-model döndürür.
+- Kaynak kimliklerinde stabil UUID kullanılır.
+- Her tenant sorgusu açık ve doğrulanmış `organization_id` scope'u taşır.
+- Web ve gelecekteki API aynı authorization policy/use-case kurallarını
+  kullanır.
+- Finansal değerler `Decimal` kalır; gelecekte JSON'da decimal string olarak
+  taşınır.
+- Veritabanı zamanı UTC, dış tarih-saat gösterimi ISO 8601 ve timezone bilgili
+  olur.
+- Listelemeler tek pagination sözleşmesine uyar.
+- “İleride mobil gerekir” gerekçesiyle gereksiz endpoint eklenmez.
+- Açıkça istenmedikçe JSON API geliştirilmez.
+
+Announcement kalıcı yönetim içeriği, Notification kullanıcıya özgü
+teslim/okunma kaydı, push ise ayrı ve başarısızlığı ana işlemi geri almayan
+teslim altyapısı olarak ele alınacaktır. Bu modeller, outbox/background job
+mekanizması ve device token yönetimi henüz uygulanmamıştır.
