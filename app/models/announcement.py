@@ -29,9 +29,7 @@ if TYPE_CHECKING:
 class Announcement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "announcements"
     __table_args__ = (
-        UniqueConstraint(
-            "organization_id", "id", name="uq_announcements_org_id"
-        ),
+        UniqueConstraint("organization_id", "id", name="uq_announcements_org_id"),
         CheckConstraint(
             "status != 'published' OR published_at IS NOT NULL",
             name="ck_announcements_published_at_required",
@@ -90,6 +88,10 @@ class Announcement(UUIDPrimaryKeyMixin, TimestampMixin, Base):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+    reads: Mapped[list[AnnouncementRead]] = relationship(
+        back_populates="announcement",
+        passive_deletes=True,
+    )
 
 
 class AnnouncementBuilding(UUIDPrimaryKeyMixin, Base):
@@ -120,14 +122,51 @@ class AnnouncementBuilding(UUIDPrimaryKeyMixin, Base):
     )
 
     organization_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
-    announcement_id: Mapped[uuid.UUID] = mapped_column(
-        db.Uuid, nullable=False, index=True
-    )
+    announcement_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False, index=True)
     building_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
 
-    announcement: Mapped[Announcement] = relationship(
-        back_populates="building_targets"
+    announcement: Mapped[Announcement] = relationship(back_populates="building_targets")
+    building: Mapped[Building] = relationship(overlaps="announcement,building_targets")
+
+
+class AnnouncementRead(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "announcement_reads"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "announcement_id"],
+            ["announcements.organization_id", "announcements.id"],
+            ondelete="CASCADE",
+            name="fk_announcement_reads_org_announcement",
+        ),
+        UniqueConstraint(
+            "announcement_id",
+            "user_id",
+            name="uq_announcement_reads_announcement_user",
+        ),
+        Index(
+            "ix_announcement_reads_org_user",
+            "organization_id",
+            "user_id",
+        ),
+        Index(
+            "ix_announcement_reads_org_announcement",
+            "organization_id",
+            "announcement_id",
+        ),
+        Index("ix_announcement_reads_read_at", "read_at"),
     )
-    building: Mapped[Building] = relationship(
-        overlaps="announcement,building_targets"
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    announcement_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        db.Uuid,
+        db.ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
     )
+    read_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+    )
+
+    announcement: Mapped[Announcement] = relationship(back_populates="reads")
+    user: Mapped[User] = relationship()

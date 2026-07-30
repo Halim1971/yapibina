@@ -12,11 +12,13 @@ from app.models import (
     Announcement,
     AnnouncementAudienceScope,
     AnnouncementBuilding,
+    AnnouncementRead,
     AnnouncementStatus,
     Apartment,
     ApartmentMembership,
     Building,
     OrganizationMembership,
+    OrganizationMembershipRole,
     User,
     UserStatus,
 )
@@ -33,6 +35,7 @@ class ResidentAnnouncementItem:
     body_preview: str
     published_at: datetime
     expires_at: datetime | None
+    is_read: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +56,7 @@ class ResidentAnnouncementDetail:
     expires_at: datetime | None
 
 
-def _visible_conditions(
+def resident_announcement_visibility_conditions(
     *,
     organization_id: uuid.UUID,
     user_id: uuid.UUID,
@@ -101,6 +104,8 @@ def _visible_conditions(
         select(1).where(
             OrganizationMembership.organization_id == organization_id,
             OrganizationMembership.user_id == user_id,
+            OrganizationMembership.role
+            == OrganizationMembershipRole.ORGANIZATION_MEMBER,
             OrganizationMembership.is_active.is_(True),
             OrganizationMembership.starts_at <= now,
             or_(
@@ -109,9 +114,7 @@ def _visible_conditions(
             ),
         )
     )
-    active_user = exists(
-        select(1).where(User.id == user_id, User.status == UserStatus.ACTIVE)
-    )
+    active_user = exists(select(1).where(User.id == user_id, User.status == UserStatus.ACTIVE))
     return (
         Announcement.organization_id == organization_id,
         Announcement.status == AnnouncementStatus.PUBLISHED,
@@ -121,11 +124,9 @@ def _visible_conditions(
         active_user,
         active_organization_membership,
         or_(
-            Announcement.audience_scope
-            == AnnouncementAudienceScope.ORGANIZATION,
+            Announcement.audience_scope == AnnouncementAudienceScope.ORGANIZATION,
             and_(
-                Announcement.audience_scope
-                == AnnouncementAudienceScope.BUILDINGS,
+                Announcement.audience_scope == AnnouncementAudienceScope.BUILDINGS,
                 active_building_target,
             ),
         ),
@@ -144,7 +145,7 @@ def list_resident_announcements(
     reference = as_utc(now or utc_now())
     page = max(page, 1)
     per_page = per_page if per_page in ALLOWED_PAGE_SIZES else 20
-    conditions = _visible_conditions(
+    conditions = resident_announcement_visibility_conditions(
         organization_id=organization_id, user_id=user_id, now=reference
     )
     count_value = session.execute(
@@ -160,6 +161,15 @@ def list_resident_announcements(
             Announcement.body,
             Announcement.published_at,
             Announcement.expires_at,
+            AnnouncementRead.id.label("read_id"),
+        )
+        .outerjoin(
+            AnnouncementRead,
+            and_(
+                AnnouncementRead.organization_id == organization_id,
+                AnnouncementRead.announcement_id == Announcement.id,
+                AnnouncementRead.user_id == user_id,
+            ),
         )
         .where(*conditions)
         .order_by(Announcement.published_at.desc(), Announcement.id.asc())
@@ -171,11 +181,10 @@ def list_resident_announcements(
             ResidentAnnouncementItem(
                 id=row.id,
                 title=row.title,
-                body_preview=(
-                    row.body if len(row.body) <= 180 else f"{row.body[:177]}..."
-                ),
+                body_preview=(row.body if len(row.body) <= 180 else f"{row.body[:177]}..."),
                 published_at=as_utc(row.published_at),
                 expires_at=as_utc(row.expires_at) if row.expires_at else None,
+                is_read=row.read_id is not None,
             )
             for row in rows
         ),
@@ -203,7 +212,7 @@ def get_resident_announcement(
             Announcement.published_at,
             Announcement.expires_at,
         ).where(
-            *_visible_conditions(
+            *resident_announcement_visibility_conditions(
                 organization_id=organization_id,
                 user_id=user_id,
                 now=reference,

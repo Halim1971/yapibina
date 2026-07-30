@@ -1,5 +1,9 @@
 from app.imports.models import ExternalRecordMap, ImportRun, ImportRunStatus
-from app.models.announcement import Announcement, AnnouncementBuilding
+from app.models.announcement import (
+    Announcement,
+    AnnouncementBuilding,
+    AnnouncementRead,
+)
 from app.models.apartment import Apartment, ApartmentMembership
 from app.models.building import Building, BuildingMembership
 from app.models.domain import OrganizationDomain
@@ -31,6 +35,7 @@ __all__ = [
     "Announcement",
     "AnnouncementAudienceScope",
     "AnnouncementBuilding",
+    "AnnouncementRead",
     "AnnouncementStatus",
     "Building",
     "BuildingMembership",

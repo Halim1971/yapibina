@@ -7,6 +7,7 @@ from app.extensions import db
 
 EXPECTED_TABLES = {
     "announcement_buildings",
+    "announcement_reads",
     "announcements",
     "users",
     "organizations",

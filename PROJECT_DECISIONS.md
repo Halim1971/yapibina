@@ -811,6 +811,33 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
   nesnelerinden bağımsız typed read-model üretir; gelecekte web ve mobil aynı
   application service kurallarını kullanır.
 
+## D-076 — In-app notification center görünür duyurulardan türetilir
+
+- **Karar:** Kullanıcılara önceden notification fan-out satırları oluşturulmaz.
+  Resident bildirim merkezi, F2 görünürlük predicate’iyle seçilen
+  `Announcement` kayıtlarının kullanıcıya ait `AnnouncementRead` ile left join
+  edilmesinden türetilir.
+- **Receipt semantiği:** `AnnouncementRead` organization + announcement + user
+  kapsamındadır ve apartment/building/membership kimliği taşımaz. Aynı
+  kullanıcı-duyuru çifti tektir. Detay GET’inin başarılı olması bilinçli olarak
+  ilk `read_at` kaydını üretir; sonraki GET veya manuel POST timestamp’i
+  değiştirmez. Mark-unread ve receipt silme yoktur.
+- **Yaşam döngüsü:** Duyuru expired veya archived olduğunda aktif resident
+  listesinden ve unread sayısından çıkar, receipt tarihsel olarak korunur.
+  Announcement silme ürün davranışı değildir; FK yalnız migration/test
+  temizliğinde cascade sağlar.
+- **Aggregate sınırı:** Reachable resident sayısı detay görüntülendiği andaki
+  aktif user/membership/apartment/building ilişkilerinden distinct hesaplanır;
+  read sayısı tarihsel receipt’lerden gelir. Audience snapshot olmadığı için
+  membership değişiminde read sayısı reachable sayısından büyük kalabilir.
+  UI unread değerini sıfırın altına indirmez, oranı yüzde 100’de sınırlar.
+- **Teslim ayrımı:** Bu metrikler “gönderildi/teslim edildi” anlamına gelmez.
+  Push, e-posta, SMS, WhatsApp, device token, outbox ve background worker
+  bulunmaz. Tek tek resident okuma listesi veya mobil/JSON API endpoint’i yoktur.
+- **İstemci bağımsızlığı:** Visibility, receipt, unread ve notification typed
+  servisleri Flask/Jinja’dan bağımsızdır; gelecekteki mobil taşıma katmanı aynı
+  servisleri kullanabilir.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

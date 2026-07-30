@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import resident_nav with context %}
+{% block title %}Bildirimler{% endblock %}
+{% block navigation %}{{ resident_nav() }}{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">Duyurular</p><h1>Bildirimler</h1><p>{{ listing.total }} kayıt</p></div></section>
+<nav class="filter-tabs" aria-label="Bildirim filtreleri">
+  <a {% if listing.state_filter == "all" %}aria-current="page"{% endif %} href="{{ url_for('resident.notifications', state='all') }}">Tümü</a>
+  <a {% if listing.state_filter == "unread" %}aria-current="page"{% endif %} href="{{ url_for('resident.notifications', state='unread') }}">Okunmamış</a>
+  <a {% if listing.state_filter == "read" %}aria-current="page"{% endif %} href="{{ url_for('resident.notifications', state='read') }}">Okunmuş</a>
+</nav>
+{% if listing.items %}
+<div class="announcement-list">{% for item in listing.items %}
+  <article class="detail-card">
+    <p class="eyebrow">{{ item.published_at|datetime_tr }} · {{ item.audience_label }}</p>
+    <h2><a href="{{ url_for('resident.announcement_detail', announcement_id=item.announcement_id) }}">{{ item.title }}</a></h2>
+    <p>{{ item.body_preview }}</p>
+    <div class="actions"><span class="badge">{{ "Okundu" if item.is_read else "Okunmamış" }}</span>
+    {% if not item.is_read %}<form method="post" action="{{ url_for('resident.notification_mark_read', announcement_id=item.announcement_id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Okundu olarak işaretle</button></form>{% endif %}</div>
+  </article>
+{% endfor %}</div>
+{% if listing.pages > 1 %}<nav class="pagination" aria-label="Sayfalar">{% for number in range(1, listing.pages + 1) %}<a {% if number == listing.page %}aria-current="page"{% endif %} href="{{ url_for('resident.notifications', state=listing.state_filter, page=number, per_page=listing.per_page) }}">{{ number }}</a>{% endfor %}</nav>{% endif %}
+{% else %}<div class="empty-state"><h2>{% if listing.state_filter == "unread" %}Okunmamış bildiriminiz yok{% elif listing.state_filter == "read" %}Okunmuş bildiriminiz yok{% else %}Henüz bildiriminiz yok{% endif %}</h2></div>{% endif %}
+{% endblock %}

@@ -60,3 +60,7 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
   yayınlanmış/planlı ve arşivlenmiş durum geçişleri
 - Organization admin duyuru yönetimi ile aktif üyelik/bina hedeflerine göre
   tenant-safe resident duyuru listesi ve detay ekranları
+- Kullanıcı ve duyuru başına tek, tenant-aware AnnouncementRead kaydı; detay
+  görüntülemede ve manuel POST işleminde idempotent okundu işaretleme
+- Görünür duyurulardan türetilen resident bildirim merkezi, okunmamış navbar
+  rozeti ve kimlik göstermeyen organization aggregate okunma metrikleri

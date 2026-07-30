@@ -50,6 +50,9 @@ Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
   planlı yayın ve arşiv yaşam döngüsüne sahip duyuru yönetimi
 - Resident için aktif daire üyeliklerine göre tenant-safe, salt-okunur duyuru
   listesi ve detay görünümü
+- Announcement + kullanıcı bazlı AnnouncementRead verisinden türetilen
+  uygulama içi bildirim merkezi, okunmamış navbar rozeti ve organization
+  aggregate okunma özeti
 - Pytest, Ruff ve mypy yapılandırması
 
 ## Gereksinimler
@@ -360,7 +363,9 @@ Yeni özellik geliştirirken aşağıdaki kontrol listesi uygulanır:
 - Açıkça istenmedikçe JSON API geliştirilmez.
 
 Announcement kalıcı yönetim içeriğidir ve organization/bina hedefli web
-görünümleri uygulanmıştır. Notification kullanıcıya özgü teslim/okunma kaydı,
-push ise ayrı ve başarısızlığı ana işlemi geri almayan teslim altyapısı olarak
-ele alınacaktır. Notification, outbox/background job ve device token yönetimi
-henüz uygulanmamıştır.
+görünümleri uygulanmıştır. `AnnouncementRead`, bir kullanıcının görünür bir
+duyuruyu ilk açtığı zamanı apartment’tan bağımsız ve idempotent olarak saklar.
+Bildirim merkezi kalıcı bir teslim/fan-out tablosu değil, görünür Announcement
+ve AnnouncementRead birleşiminden türetilir. Push ise ayrı ve başarısızlığı ana
+işlemi geri almayan teslim altyapısıdır. Push notification, outbox/background
+job ve device token yönetimi henüz uygulanmamıştır.

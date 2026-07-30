@@ -4,15 +4,19 @@ import math
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.models import (
     Announcement,
     AnnouncementAudienceScope,
     AnnouncementBuilding,
+    AnnouncementRead,
     AnnouncementStatus,
+    Apartment,
+    ApartmentMembership,
     Building,
     OrganizationMembership,
     OrganizationMembershipRole,
@@ -81,6 +85,15 @@ class AnnouncementDetail:
     can_edit: bool
     can_publish: bool
     can_archive: bool
+    engagement: AnnouncementEngagement
+
+
+@dataclass(frozen=True, slots=True)
+class AnnouncementEngagement:
+    reachable_resident_count: int
+    read_resident_count: int
+    unread_resident_count: int
+    read_rate: Decimal | None
 
 
 def _clean_required(value: str, *, label: str, maximum: int) -> str:
@@ -196,6 +209,111 @@ def _load_scoped(
     if announcement is None:
         raise EntityNotFoundError("Duyuru bulunamadı.")
     return announcement
+
+
+def _announcement_engagement(
+    session: SessionLike,
+    *,
+    announcement: Announcement,
+    now: datetime,
+) -> AnnouncementEngagement:
+    active_membership_conditions = (
+        OrganizationMembership.organization_id == announcement.organization_id,
+        OrganizationMembership.role
+        == OrganizationMembershipRole.ORGANIZATION_MEMBER,
+        OrganizationMembership.is_active.is_(True),
+        OrganizationMembership.starts_at <= now,
+        or_(
+            OrganizationMembership.ends_at.is_(None),
+            OrganizationMembership.ends_at >= now,
+        ),
+        User.status == UserStatus.ACTIVE,
+    )
+    if (
+        announcement.audience_scope
+        is AnnouncementAudienceScope.ORGANIZATION
+    ):
+        reachable_statement = (
+            select(func.count(func.distinct(User.id)))
+            .select_from(User)
+            .join(
+                OrganizationMembership,
+                OrganizationMembership.user_id == User.id,
+            )
+            .where(*active_membership_conditions)
+        )
+    else:
+        reachable_statement = (
+            select(func.count(func.distinct(User.id)))
+            .select_from(User)
+            .join(
+                OrganizationMembership,
+                OrganizationMembership.user_id == User.id,
+            )
+            .join(
+                ApartmentMembership,
+                and_(
+                    ApartmentMembership.user_id == User.id,
+                    ApartmentMembership.organization_id
+                    == announcement.organization_id,
+                    ApartmentMembership.is_active.is_(True),
+                    ApartmentMembership.starts_at <= now,
+                    or_(
+                        ApartmentMembership.ends_at.is_(None),
+                        ApartmentMembership.ends_at >= now,
+                    ),
+                ),
+            )
+            .join(
+                Apartment,
+                and_(
+                    Apartment.id == ApartmentMembership.apartment_id,
+                    Apartment.organization_id == announcement.organization_id,
+                    Apartment.is_active.is_(True),
+                ),
+            )
+            .join(
+                Building,
+                and_(
+                    Building.id == Apartment.building_id,
+                    Building.organization_id == announcement.organization_id,
+                    Building.is_active.is_(True),
+                ),
+            )
+            .join(
+                AnnouncementBuilding,
+                and_(
+                    AnnouncementBuilding.organization_id
+                    == announcement.organization_id,
+                    AnnouncementBuilding.announcement_id == announcement.id,
+                    AnnouncementBuilding.building_id == Building.id,
+                ),
+            )
+            .where(*active_membership_conditions)
+        )
+    read_statement = select(
+        func.count(func.distinct(AnnouncementRead.user_id))
+    ).where(
+        AnnouncementRead.organization_id == announcement.organization_id,
+        AnnouncementRead.announcement_id == announcement.id,
+    )
+    reachable = int(session.scalar(reachable_statement) or 0)
+    read = int(session.scalar(read_statement) or 0)
+    unread = max(reachable - read, 0)
+    rate = (
+        min(
+            (Decimal(read) * Decimal("100")) / Decimal(reachable),
+            Decimal("100"),
+        ).quantize(Decimal("0.1"))
+        if reachable
+        else None
+    )
+    return AnnouncementEngagement(
+        reachable_resident_count=reachable,
+        read_resident_count=read,
+        unread_resident_count=unread,
+        read_rate=rate,
+    )
 
 
 def create_announcement(
@@ -393,6 +511,11 @@ def get_organization_announcement(
         and announcement.published_at is not None
         and as_utc(announcement.published_at) > reference
     )
+    engagement = _announcement_engagement(
+        session,
+        announcement=announcement,
+        now=reference,
+    )
     return AnnouncementDetail(
         id=announcement.id,
         title=announcement.title,
@@ -422,6 +545,7 @@ def get_organization_announcement(
         can_edit=announcement.status is AnnouncementStatus.DRAFT or scheduled,
         can_publish=announcement.status is AnnouncementStatus.DRAFT,
         can_archive=announcement.status is not AnnouncementStatus.ARCHIVED,
+        engagement=engagement,
     )
 
 

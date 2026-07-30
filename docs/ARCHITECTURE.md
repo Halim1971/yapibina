@@ -218,6 +218,19 @@ yayın zamanı gelene kadar içeriği/hedefi değiştirilebilir fakat kayıt
 `published` kalır ve taslağa geri dönmez. Announcement tenant-local veridir;
 standart veri importer’ı bu kayıtları oluşturmaz, değiştirmez veya silmez.
 
+`AnnouncementRead`, user başına ilk okuma zamanını saklayan tenant-local
+receipt’tir; apartment veya membership’e bağlanmaz. Resident notification
+center ayrı bir delivery tablosu değildir: aktif/görünür announcement sorgusu
+read receipt ile birleştirilir. Detay GET’i görünürlük doğrulamasından sonra
+receipt’i idempotent biçimde oluşturur. Expired/arşivlenmiş içerik aktif listede
+ve unread sayısında görünmez fakat receipt korunur.
+
+Organization detayındaki reachable metriği mevcut aktif membership’lerden
+dinamik `COUNT(DISTINCT user)` ile, read metriği tarihsel receipt’lerden
+hesaplanır. Audience snapshot bulunmadığından üyelik değişimlerinde iki sayı
+farklı tarihsel kümeleri temsil edebilir; bu metrik harici teslim raporu
+değildir ve tek tek resident kimliği sunulmaz.
+
 ## 9. Finansal ledger
 
 Basit ve güvenilir bir hareket defteri yaklaşımı kullanılır. Finansal kavramlar açıkça ayrılır:
@@ -289,8 +302,9 @@ MVP:
 
 ## 13. Bildirim mimarisi
 
-MVP'de duyuru uygulama içinde gösterilir; kullanıcı bazlı okunma bilgisi
-saklanmaz. Duyuru yayınlama service'i ileride bir `NotificationDispatcher`
+MVP'de duyuru uygulama içinde gösterilir ve kullanıcı başına ilk okuma zamanı
+`AnnouncementRead` ile saklanır. Ayrı notification delivery/fan-out kaydı
+oluşturulmaz. Duyuru yayınlama service'i ileride bir `NotificationDispatcher`
 portuna domain olayı verebilir. Web Push, e-posta veya başka kanal adapter'ları
 daha sonra eklenir. Bildirim teslim durumu duyurunun yayınlanmış olmasının
 doğruluk kaynağı değildir; tekrar deneme ve idempotency ayrı ele alınır.

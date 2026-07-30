@@ -21,6 +21,10 @@ from app.services.resident_finances import (
     get_resident_payments,
     resolve_resident_apartment,
 )
+from app.services.resident_notifications import (
+    list_resident_notifications,
+    mark_announcement_read,
+)
 
 
 def _organization_id() -> uuid.UUID:
@@ -149,9 +153,7 @@ def announcements() -> str:
         page=_page(),
         per_page=request.args.get("per_page", 20, type=int) or 20,
     )
-    return render_template(
-        "resident/announcements/index.html", listing=listing
-    )
+    return render_template("resident/announcements/index.html", listing=listing)
 
 
 @resident_blueprint.get("/resident/announcements/<uuid:announcement_id>")
@@ -164,8 +166,45 @@ def announcement_detail(announcement_id: uuid.UUID) -> str:
             user_id=current_user.id,
             announcement_id=announcement_id,
         )
+        mark_announcement_read(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            announcement_id=announcement_id,
+        )
+        db.session.commit()
     except EntityNotFoundError:
+        db.session.rollback()
         abort(404)
-    return render_template(
-        "resident/announcements/detail.html", announcement=announcement
+    return render_template("resident/announcements/detail.html", announcement=announcement)
+
+
+@resident_blueprint.get("/resident/notifications")
+@resident_required
+def notifications() -> str:
+    listing = list_resident_notifications(
+        db.session,
+        organization_id=_organization_id(),
+        user_id=current_user.id,
+        state_filter=request.args.get("state", "all"),
+        page=_page(),
+        per_page=request.args.get("per_page", 20, type=int) or 20,
     )
+    return render_template("resident/notifications/index.html", listing=listing)
+
+
+@resident_blueprint.post("/resident/notifications/<uuid:announcement_id>/read")
+@resident_required
+def notification_mark_read(announcement_id: uuid.UUID) -> Any:
+    try:
+        mark_announcement_read(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            announcement_id=announcement_id,
+        )
+        db.session.commit()
+    except EntityNotFoundError:
+        db.session.rollback()
+        abort(404)
+    return redirect(url_for("resident.notifications"))

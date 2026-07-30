@@ -13,6 +13,7 @@
     <a href="{{ url_for('resident.index', apartment_id=apartment_id) }}">Dairem</a>
     <a href="{{ url_for('resident.account', apartment_id=apartment_id) }}">Hesap hareketleri</a>
     <a href="{{ url_for('resident.announcements') }}">Duyurular</a>
+    <a href="{{ url_for('resident.notifications') }}">Bildirimler{% if unread_announcement_count %} <span class="notification-count">{{ "99+" if unread_announcement_count > 99 else unread_announcement_count }}</span>{% endif %}</a>
     <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}
