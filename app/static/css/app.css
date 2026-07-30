@@ -7,6 +7,28 @@ body {
   color: var(--brand-text);
   background: var(--color-surface);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 1rem;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+p {
+  overflow-wrap: anywhere;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(1.65rem, 5vw, 2.35rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
 }
 
 .nav-brand {
@@ -47,6 +69,9 @@ body {
   justify-content: center;
   padding: 1rem;
   color: var(--brand-text);
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  text-align: center;
 }
 
 .logo-preview {
@@ -113,6 +138,14 @@ body {
   cursor: pointer;
 }
 
+.button.secondary {
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+  text-align: center;
+  text-decoration: none;
+}
+
 .alert {
   padding: 0.75rem;
   border: 1px solid var(--color-secondary);
@@ -143,6 +176,10 @@ body {
   font: inherit;
 }
 
+.nav a {
+  text-decoration: none;
+}
+
 .nav form {
   margin-left: auto;
 }
@@ -160,6 +197,7 @@ body {
   border: 1px solid var(--color-secondary);
   border-radius: 0.75rem;
   background: var(--color-white);
+  box-shadow: 0 0.5rem 2rem rgb(15 63 63 / 7%);
 }
 
 .panel.wide {
@@ -216,6 +254,9 @@ td {
   padding: 0.2rem 0.5rem;
   border-radius: 1rem;
   background: var(--color-surface);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
 }
 
 .button-inline {
@@ -246,6 +287,66 @@ td {
 .announcement-list {
   display: grid;
   gap: 1rem;
+}
+
+.mobile-card-list {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.card-heading,
+.compact-card,
+.compact-values > div {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.compact-values {
+  display: grid;
+  gap: .55rem;
+  margin: 1rem 0;
+}
+
+.compact-values dt,
+.compact-values dd {
+  margin: 0;
+}
+
+.announcement-card.scheduled {
+  border-inline-start: .3rem solid var(--brand-secondary);
+}
+
+.announcement-card.sent {
+  border-inline-start: .3rem solid var(--brand-primary);
+}
+
+.positive { color: #17633b; }
+.negative { color: #8a2d2d; }
+
+@media (min-width: 768px) {
+  .mobile-card-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 430px) {
+  .detail-card,
+  .panel {
+    padding: 1rem;
+  }
+
+  .card-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-card .button {
+    min-height: 44px;
+    width: 100%;
+  }
 }
 
 .announcement-body {
@@ -824,5 +925,365 @@ td {
   .filter-actions > * {
     width: 100%;
     text-align: center;
+  }
+}
+
+/* Resident demo: shared mobile-first presentation */
+.resident-nav {
+  position: sticky;
+  z-index: 20;
+  top: 0;
+  min-height: 4.25rem;
+  box-shadow: 0 0.2rem 1rem rgb(0 0 0 / 14%);
+}
+
+.resident-nav .nav-brand {
+  flex: 0 0 auto;
+  margin-right: 0.5rem;
+}
+
+.resident-nav-links {
+  display: flex;
+  min-width: 0;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.resident-nav-links > a {
+  display: inline-flex;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.8rem;
+  align-items: center;
+  border-radius: 0.55rem;
+  font-size: 0.9rem;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.resident-nav-links > a:hover,
+.resident-nav-links > a.active {
+  background: rgb(255 255 255 / 15%);
+}
+
+.resident-nav button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.55rem;
+  cursor: pointer;
+}
+
+.resident-page {
+  max-width: 70rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  border: 0;
+  border-radius: 1rem;
+}
+
+.resident-page-header {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.resident-page-header .eyebrow {
+  margin: 0 0 0.25rem;
+  color: var(--color-primary);
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.page-intro {
+  max-width: 44rem;
+  margin: 0.6rem 0 0;
+  color: color-mix(in srgb, var(--brand-text) 70%, transparent);
+}
+
+.detail-card {
+  min-width: 0;
+  padding: 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--color-secondary) 75%, transparent);
+  border-radius: 0.85rem;
+  background: var(--color-white);
+  box-shadow: 0 0.3rem 1rem rgb(15 63 63 / 6%);
+}
+
+.detail-card h2 {
+  margin-top: 0.6rem;
+}
+
+.mobile-card-list,
+.announcement-list {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 19rem), 1fr));
+  gap: 0.9rem;
+}
+
+.due-summary-card,
+.movement-card,
+.expense-card,
+.announcement-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.due-summary-card .button,
+.announcement-card .text-link {
+  margin-top: auto;
+}
+
+.card-heading {
+  min-height: 1.8rem;
+}
+
+.card-heading h2 {
+  margin: 0;
+}
+
+.card-date,
+.card-meta {
+  color: color-mix(in srgb, var(--brand-text) 65%, transparent);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.compact-values > div {
+  min-height: 2rem;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-secondary) 55%, transparent);
+}
+
+.compact-values > div:last-child {
+  border-bottom: 0;
+}
+
+.compact-values dt {
+  color: color-mix(in srgb, var(--brand-text) 68%, transparent);
+  font-size: 0.88rem;
+}
+
+.compact-values dd {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.compact-values .highlight-value {
+  padding: 0.65rem;
+  border: 0;
+  border-radius: 0.55rem;
+  background: var(--color-surface);
+}
+
+.transaction-amount {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.status-badge,
+.due-status {
+  color: var(--brand-text);
+}
+
+.read-badge {
+  font-weight: 600;
+}
+
+.badge-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.card-link {
+  color: var(--brand-text);
+  text-decoration: none;
+}
+
+.card-link::after {
+  position: absolute;
+  content: "";
+  inset: 0;
+}
+
+.announcement-card {
+  position: relative;
+}
+
+.announcement-card .text-link {
+  position: relative;
+  z-index: 1;
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.announcement-card.scheduled {
+  background: color-mix(in srgb, var(--color-secondary) 18%, var(--color-white));
+}
+
+.announcement-detail-card {
+  max-width: 50rem;
+}
+
+.back-link {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 2.75rem;
+  margin-bottom: 1rem;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.resident-empty-state {
+  display: flex;
+  min-height: 10rem;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  border: 1px dashed var(--color-secondary);
+}
+
+.resident-empty-state h2,
+.resident-empty-state p {
+  margin: 0;
+}
+
+.resident-empty-state p {
+  margin-top: 0.3rem;
+  color: color-mix(in srgb, var(--brand-text) 68%, transparent);
+}
+
+.empty-icon {
+  display: inline-grid;
+  width: 3rem;
+  height: 3rem;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  color: var(--color-primary);
+  background: var(--color-white);
+  font-size: 1.4rem;
+  place-items: center;
+}
+
+.metric-card {
+  min-height: 7.25rem !important;
+  background: var(--color-white) !important;
+}
+
+.primary-metric {
+  border-inline-start: 0.3rem solid var(--color-primary) !important;
+}
+
+.statement-details {
+  margin-top: 1.5rem;
+}
+
+.statement-details > summary,
+.inline-details > summary {
+  color: var(--color-primary);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.inline-details {
+  margin-top: auto;
+  padding-top: 0.65rem;
+}
+
+.pagination {
+  justify-content: center;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.pagination a,
+.pagination span {
+  display: inline-grid;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.55rem;
+  place-items: center;
+  text-decoration: none;
+}
+
+.pagination a[aria-current="page"] {
+  color: var(--color-white);
+  background: var(--color-primary);
+}
+
+@media (max-width: 64rem) {
+  .resident-nav {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.55rem;
+    padding: 0.7rem 1rem;
+  }
+
+  .resident-nav-links {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding-bottom: 0.1rem;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: thin;
+  }
+
+  .resident-nav form {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 48rem) {
+  .page {
+    padding: 0.75rem;
+  }
+
+  .resident-page {
+    margin: 0 auto;
+  }
+
+  .finance-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .resident-summary article {
+    min-height: 6.25rem;
+  }
+
+  .resident-empty-state {
+    min-height: 9rem;
+    text-align: left;
+  }
+}
+
+@media (max-width: 27rem) {
+  .resident-nav .nav-brand span:last-child {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .resident-nav-links > a {
+    font-size: 0.84rem;
+  }
+
+  .resident-page {
+    padding: 0.9rem;
+    border-radius: 0.75rem;
+  }
+
+  .detail-card {
+    padding: 1rem;
+  }
+
+  .compact-values > div {
+    gap: 0.6rem;
   }
 }

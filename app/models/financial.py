@@ -310,6 +310,118 @@ class PaymentAllocation(UUIDPrimaryKeyMixin, Base):
     )
 
 
+class BuildingExpense(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "building_expenses"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "building_id"],
+            ["buildings.organization_id", "buildings.id"],
+            ondelete="RESTRICT",
+            name="fk_building_expenses_org_building",
+        ),
+        CheckConstraint("amount > 0", name="ck_building_expenses_positive_amount"),
+        UniqueConstraint("organization_id", "id", name="uq_building_expenses_org_id"),
+        UniqueConstraint(
+            "organization_id",
+            "building_id",
+            "source_key",
+            name="uq_building_expenses_source",
+        ),
+        Index(
+            "ix_building_expenses_org_building_month",
+            "organization_id",
+            "building_id",
+            "expense_month",
+        ),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    building_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    source_key: Mapped[str] = mapped_column(String(120), nullable=False)
+    expense_date: Mapped[date] = mapped_column(Date, nullable=False)
+    expense_month: Mapped[date] = mapped_column(Date, nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    payment_method: Mapped[str] = mapped_column(String(20), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(MONEY_TYPE, nullable=False)
+
+
+class ApartmentExpenseContribution(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "apartment_expense_contributions"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "expense_id"],
+            ["building_expenses.organization_id", "building_expenses.id"],
+            ondelete="CASCADE",
+            name="fk_expense_contributions_org_expense",
+        ),
+        ForeignKeyConstraint(
+            ["organization_id", "apartment_id"],
+            ["apartments.organization_id", "apartments.id"],
+            ondelete="RESTRICT",
+            name="fk_expense_contributions_org_apartment",
+        ),
+        CheckConstraint("amount >= 0", name="ck_expense_contributions_nonnegative"),
+        UniqueConstraint(
+            "expense_id",
+            "apartment_id",
+            name="uq_expense_contributions_expense_apartment",
+        ),
+        Index(
+            "ix_expense_contributions_org_apartment",
+            "organization_id",
+            "apartment_id",
+        ),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    expense_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    apartment_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    amount: Mapped[Decimal] = mapped_column(MONEY_TYPE, nullable=False)
+
+
+class BuildingBankTransaction(UUIDPrimaryKeyMixin, Base):
+    __tablename__ = "building_bank_transactions"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["organization_id", "building_id"],
+            ["buildings.organization_id", "buildings.id"],
+            ondelete="RESTRICT",
+            name="fk_bank_transactions_org_building",
+        ),
+        CheckConstraint("inflow >= 0", name="ck_bank_transactions_inflow"),
+        CheckConstraint("outflow >= 0", name="ck_bank_transactions_outflow"),
+        CheckConstraint(
+            "NOT (inflow > 0 AND outflow > 0)",
+            name="ck_bank_transactions_single_direction",
+        ),
+        UniqueConstraint(
+            "organization_id",
+            "building_id",
+            "source_key",
+            name="uq_bank_transactions_source",
+        ),
+        Index(
+            "ix_bank_transactions_org_building_date",
+            "organization_id",
+            "building_id",
+            "transaction_date",
+        ),
+    )
+
+    organization_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    building_id: Mapped[uuid.UUID] = mapped_column(db.Uuid, nullable=False)
+    source_key: Mapped[str] = mapped_column(String(160), nullable=False)
+    transaction_date: Mapped[date] = mapped_column(Date, nullable=False)
+    description: Mapped[str] = mapped_column(String(500), nullable=False)
+    transaction_type: Mapped[str] = mapped_column(String(30), nullable=False)
+    inflow: Mapped[Decimal] = mapped_column(MONEY_TYPE, nullable=False)
+    outflow: Mapped[Decimal] = mapped_column(MONEY_TYPE, nullable=False)
+    balance: Mapped[Decimal] = mapped_column(MONEY_TYPE, nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    reference: Mapped[str] = mapped_column(String(160), nullable=False)
+
+
 def _protect_posted_financial_fields(
     target: Charge | Payment,
     field_names: tuple[str, ...],

@@ -11,7 +11,10 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.security import generate_password_hash
 
 from app.imports.constants import (
+    ENTITY_ANNOUNCEMENT,
+    ENTITY_BANK_TRANSACTION,
     ENTITY_CHARGE,
+    ENTITY_EXPENSE,
     ENTITY_PAYMENT,
     ENTITY_RESIDENT,
     ENTITY_SITE,
@@ -27,7 +30,10 @@ from app.imports.exceptions import (
 from app.imports.models import ExternalRecordMap, ImportRun, ImportRunStatus
 from app.imports.reader import validate_package_relationships
 from app.imports.schemas import (
+    BankTransactionRow,
     ChargeRow,
+    DemoAnnouncementRow,
+    ExpenseRow,
     ImportResult,
     PaymentRow,
     ResidentUnitRow,
@@ -35,10 +41,17 @@ from app.imports.schemas import (
     StandardPackage,
 )
 from app.models import (
+    Announcement,
+    AnnouncementAudienceScope,
+    AnnouncementBuilding,
+    AnnouncementStatus,
     Apartment,
+    ApartmentExpenseContribution,
     ApartmentMembership,
     ApartmentMembershipRole,
     Building,
+    BuildingBankTransaction,
+    BuildingExpense,
     Charge,
     ChargeStatus,
     ChargeType,
@@ -52,7 +65,7 @@ from app.models import (
 )
 from app.models.base import utc_now
 from app.services import EntityNotFoundError, ServiceValidationError, SessionLike
-from app.services.payments import auto_allocate_payment, record_payment
+from app.services.payments import allocate_payment, auto_allocate_payment, record_payment
 
 MappedEntity = TypeVar(
     "MappedEntity",
@@ -61,6 +74,9 @@ MappedEntity = TypeVar(
     User,
     Charge,
     Payment,
+    BuildingExpense,
+    BuildingBankTransaction,
+    Announcement,
 )
 
 
@@ -263,7 +279,9 @@ def _import_resident(
         if user is None:
             user = User(
                 email=row.email,
-                password_hash=generate_password_hash(secrets.token_urlsafe(32)),
+                password_hash=generate_password_hash(
+                    row.initial_password or secrets.token_urlsafe(32)
+                ),
                 first_name=first_name,
                 last_name=last_name,
                 phone=row.phone,
@@ -516,11 +534,32 @@ def _import_payment(
             reference=row.reference,
             description=row.description,
         )
-        auto_allocate_payment(
-            session,
-            organization_id=run.organization_id,
-            payment_id=payment.id,
-        )
+        if row.target_charge_source_key:
+            charge_mapping = _mapping(
+                session,
+                organization_id=run.organization_id,
+                source_system=source_system,
+                entity_type=ENTITY_CHARGE,
+                source_key=row.target_charge_source_key,
+            )
+            if charge_mapping is None:
+                raise ImportConflictError("Ödemenin aidat kaydı bulunamadı.")
+            charge = _mapped_entity(
+                session, Charge, charge_mapping, run.organization_id
+            )
+            allocate_payment(
+                session,
+                organization_id=run.organization_id,
+                payment_id=payment.id,
+                charge_id=charge.id,
+                amount=row.amount,
+            )
+        else:
+            auto_allocate_payment(
+                session,
+                organization_id=run.organization_id,
+                payment_id=payment.id,
+            )
         _map_record(
             session,
             run=run,
@@ -579,6 +618,176 @@ def _system_actor(
         session.add(user)
         session.flush()
     return user
+
+
+def _import_expense(
+    session: SessionLike,
+    *,
+    run: ImportRun,
+    source_system: str,
+    row: ExpenseRow,
+    building: Building,
+    apartments: dict[str, Apartment],
+    counters: _Counters,
+) -> None:
+    source_key = str(row.source_expense_key)
+    mapping = _mapping(
+        session,
+        organization_id=run.organization_id,
+        source_system=source_system,
+        entity_type=ENTITY_EXPENSE,
+        source_key=source_key,
+    )
+    payload_hash = str(row.payload_hash)
+    if mapping is not None:
+        expense = _mapped_entity(session, BuildingExpense, mapping, run.organization_id)
+        if mapping.source_payload_hash != payload_hash:
+            raise ImportConflictError(f"Gider kritik değişikliği reddedildi: {source_key}")
+        _touch_mapping(mapping, run=run, payload_hash=payload_hash)
+        counters.skipped += 1
+        return
+    expense = BuildingExpense(
+        organization_id=run.organization_id,
+        building_id=building.id,
+        source_key=source_key,
+        expense_date=row.expense_date,
+        expense_month=row.expense_month,
+        category=row.category,
+        description=row.description,
+        payment_method=row.payment_method,
+        amount=row.amount,
+    )
+    session.add(expense)
+    session.flush()
+    for unit_key, amount in row.contributions:
+        session.add(
+            ApartmentExpenseContribution(
+                organization_id=run.organization_id,
+                expense_id=expense.id,
+                apartment_id=apartments[unit_key].id,
+                amount=amount,
+            )
+        )
+    _map_record(
+        session,
+        run=run,
+        source_system=source_system,
+        entity_type=ENTITY_EXPENSE,
+        source_key=source_key,
+        internal_id=expense.id,
+        payload_hash=payload_hash,
+    )
+    counters.inserted += 1
+
+
+def _import_bank_transaction(
+    session: SessionLike,
+    *,
+    run: ImportRun,
+    source_system: str,
+    row: BankTransactionRow,
+    building: Building,
+    counters: _Counters,
+) -> None:
+    source_key = str(row.source_transaction_key)
+    mapping = _mapping(
+        session,
+        organization_id=run.organization_id,
+        source_system=source_system,
+        entity_type=ENTITY_BANK_TRANSACTION,
+        source_key=source_key,
+    )
+    payload_hash = str(row.payload_hash)
+    if mapping is not None:
+        _mapped_entity(session, BuildingBankTransaction, mapping, run.organization_id)
+        if mapping.source_payload_hash != payload_hash:
+            raise ImportConflictError(
+                f"Banka hareketi kritik değişikliği reddedildi: {source_key}"
+            )
+        _touch_mapping(mapping, run=run, payload_hash=payload_hash)
+        counters.skipped += 1
+        return
+    movement = BuildingBankTransaction(
+        organization_id=run.organization_id,
+        building_id=building.id,
+        source_key=source_key,
+        transaction_date=row.transaction_date,
+        description=row.description,
+        transaction_type=row.transaction_type,
+        inflow=row.inflow,
+        outflow=row.outflow,
+        balance=row.balance,
+        category=row.category,
+        reference=row.reference,
+    )
+    session.add(movement)
+    session.flush()
+    _map_record(
+        session,
+        run=run,
+        source_system=source_system,
+        entity_type=ENTITY_BANK_TRANSACTION,
+        source_key=source_key,
+        internal_id=movement.id,
+        payload_hash=payload_hash,
+    )
+    counters.inserted += 1
+
+
+def _import_demo_announcement(
+    session: SessionLike,
+    *,
+    run: ImportRun,
+    source_system: str,
+    row: DemoAnnouncementRow,
+    building: Building,
+    actor: User,
+    counters: _Counters,
+) -> None:
+    source_key = str(row.source_announcement_key)
+    mapping = _mapping(
+        session,
+        organization_id=run.organization_id,
+        source_system=source_system,
+        entity_type=ENTITY_ANNOUNCEMENT,
+        source_key=source_key,
+    )
+    payload_hash = str(row.payload_hash)
+    if mapping is not None:
+        _mapped_entity(session, Announcement, mapping, run.organization_id)
+        if mapping.source_payload_hash != payload_hash:
+            raise ImportConflictError(f"Duyuru değişikliği reddedildi: {source_key}")
+        _touch_mapping(mapping, run=run, payload_hash=payload_hash)
+        counters.skipped += 1
+        return
+    announcement = Announcement(
+        organization_id=run.organization_id,
+        created_by_user_id=actor.id,
+        title=row.title,
+        body=row.body,
+        status=AnnouncementStatus.PUBLISHED,
+        audience_scope=AnnouncementAudienceScope.BUILDINGS,
+        published_at=row.published_at,
+    )
+    session.add(announcement)
+    session.flush()
+    session.add(
+        AnnouncementBuilding(
+            organization_id=run.organization_id,
+            announcement_id=announcement.id,
+            building_id=building.id,
+        )
+    )
+    _map_record(
+        session,
+        run=run,
+        source_system=source_system,
+        entity_type=ENTITY_ANNOUNCEMENT,
+        source_key=source_key,
+        internal_id=announcement.id,
+        payload_hash=payload_hash,
+    )
+    counters.inserted += 1
 
 
 def _apply_package(
@@ -664,6 +873,35 @@ def _apply_package(
             actor=actor,
             counters=counters,
         )
+    for expense_row in package.expenses:
+        _import_expense(
+            session,
+            run=run,
+            source_system=source_system,
+            row=expense_row,
+            building=buildings[expense_row.source_site_key],
+            apartments=apartments,
+            counters=counters,
+        )
+    for transaction_row in package.bank_transactions:
+        _import_bank_transaction(
+            session,
+            run=run,
+            source_system=source_system,
+            row=transaction_row,
+            building=buildings[transaction_row.source_site_key],
+            counters=counters,
+        )
+    for announcement_row in package.demo_announcements:
+        _import_demo_announcement(
+            session,
+            run=run,
+            source_system=source_system,
+            row=announcement_row,
+            building=buildings[announcement_row.source_site_key],
+            actor=actor,
+            counters=counters,
+        )
     session.flush()
     return counters
 
@@ -731,7 +969,11 @@ def import_standard_package(
         source_system=source_system,
         fingerprint=package.fingerprint,
     )
-    deferred = package.expense_count + package.announcement_count
+    deferred = (
+        0
+        if package.expenses or package.demo_announcements
+        else package.expense_count + package.announcement_count
+    )
     if completed is not None:
         return ImportResult(
             run_id=str(completed.id),
@@ -744,6 +986,9 @@ def import_standard_package(
                 + len(package.units) * 2
                 + len(package.charges)
                 + len(package.payments)
+                + len(package.expenses)
+                + len(package.bank_transactions)
+                + len(package.demo_announcements)
             ),
             deferred=deferred,
         )

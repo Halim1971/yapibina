@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import resident_nav with context %}
+{% block title %}Ay Bazında Aidat Detayı{% endblock %}
+{% block navigation %}{{ resident_nav(detail.apartment.id) }}{% endblock %}
+{% block content %}
+<section class="panel wide resident-page">
+  <a class="back-link" href="{{ url_for('resident.account', apartment_id=detail.apartment.id) }}"><span aria-hidden="true">←</span> Aidat ekstresine dön</a>
+  <header class="resident-page-header"><div><p class="eyebrow">{{ "%02d"|format(detail.month) }}/{{ detail.year }}</p><h1>Ay Bazında Aidat Detayı</h1><p class="page-intro">{{ detail.apartment.building_name }} · Daire {{ detail.apartment.apartment_label }}</p></div></header>
+  <div class="mobile-card-list">
+    {% for category, amount in detail.items %}<article class="detail-card compact-card"><span>{{ category }}</span><strong>{{ format_try(amount) }}</strong></article>
+    {% else %}<div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">₺</span><div><h2>Gider detayı bulunmuyor</h2><p>Bu dönemin gider payları henüz aktarılmamış olabilir.</p></div></div>{% endfor %}
+  </div>
+  <div class="resident-summary finance-summary">
+    <article><span>Toplam aidat</span><strong>{{ format_try(detail.charged) }}</strong></article>
+    <article><span>Ödenen</span><strong>{{ format_try(detail.paid) }}</strong></article>
+    <article><span>Kalan borç</span><strong>{{ format_try(detail.remaining) }}</strong></article>
+  </div>
+</section>
+{% endblock %}

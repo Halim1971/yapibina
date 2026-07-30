@@ -338,15 +338,22 @@ tests/              Unit, integration ve functional testler
 migrations/         Alembic migration ortamı ve ilk tenant şeması
 ```
 
-## Henüz bulunmayan özellikler
+## Beş bina demo akışı
 
-Bu aşamada banka hareketi, gider, belge, duyuru, audit, notification ve
-subscription modelleri yoktur. Kayıt, parola
-sıfırlama, e-posta daveti/doğrulaması, MFA, resident gider/duyuru ekranları,
-online ödeme,
-gider/belge yükleme, production PostgreSQL veritabanı, Nginx, systemd,
-Docker ve background job altyapısı oluşturulmamıştır. Standart Excel importer
-mevcuttur; Apsiyon adapter henüz bulunmaz.
+Bu MVP'nin resmî girdisi `deneme/` altındaki beş sentetik bina Excelidir.
+`flask import-standard-data --organization-id <UUID> --path deneme` komutu
+bina, daire, resident, aylık aidat/ödeme, gider payı, bina banka hareketi ve
+üç bina duyurusunu tenant kapsamında ve idempotent olarak aktarır. Demo
+resident e-postaları resident kodundan `example.com` alanında türetilir;
+sentetik demo parolası `YapibinaDemo2026!` değeridir.
+
+Resident menüsü Aidat Ekstresi, Banka Hesap Hareketleri, Gider Dağılımı ve
+Duyurular bölümlerinden oluşur. Aidat ve gider payı seçili daireye; banka
+hareketleri ve bina duyuruları aktif üyeliğin bulunduğu binaya göre izole
+edilir.
+
+Apsiyon adapterı, gerçek müşteri senkronizasyonu, online ödeme, belge
+yükleme, push/e-posta/SMS/WhatsApp ve background job altyapısı bulunmaz.
 
 Mimari kararlar `docs/` ve `PROJECT_DECISIONS.md` içinde tutulur.
 

@@ -1,15 +1,19 @@
 # Standart Excel Importer
 
-## Sınır ve veri akışı
+## Güncel MVP sınırı ve veri akışı
 
-Apsiyon ana operasyon ve veri kaynağıdır. Importer Apsiyon ekranına bağlanmaz;
-yalnız adapter-bağımsız Yapıbina standart Excel paketini okur:
+Bu fazın resmî girdisi `deneme/` altındaki B001–B005 çok-sheet’li bina
+workbook’larıdır. Her workbook tek binadır. Reader dosya adı, sheet, kolon,
+resident kodu, gider payı, aidat ve banka bakiye invariant’larını doğrular.
+Paket fingerprint’i sıralı dosya SHA-256 değerlerinden üretilir.
 
-`Apsiyon raporları → gelecekteki adapter → standart Excel → importer → Yapıbina`
+`Beş bina demo Exceli → importer → PostgreSQL → organization/resident ekranları`
 
-Apsiyon adapter, scraping, banka entegrasyonu, gider ve duyuru UI bu kapsamda
-yoktur. Expense ve announcement dosyaları doğrulanır ve ImportRun sayaçlarında
-`deferred` olarak raporlanır; persist edilmez.
+Giderler, yalnız ilgili apartment contribution’ı ile; banka hareketleri bina
+kapsamında persist edilir. Üç demo duyurusu mevcut Announcement modeline bina
+hedefli olarak yazılır. Eski `demo_data/manifest.json` paketi regresyon fixture’ı
+olarak desteklenir ancak bu MVP demosunun resmî girdisi değildir. Apsiyon
+adapterı, harici mapping veya senkronizasyon yoktur.
 
 ## Doğrulama
 

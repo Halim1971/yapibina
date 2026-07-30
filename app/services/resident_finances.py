@@ -10,8 +10,11 @@ from sqlalchemy import func, or_, select
 
 from app.models import (
     Apartment,
+    ApartmentExpenseContribution,
     ApartmentMembership,
     Building,
+    BuildingBankTransaction,
+    BuildingExpense,
     Charge,
     ChargeStatus,
     OrganizationMembership,
@@ -38,6 +41,7 @@ PAYMENT_METHOD_LABELS = {
 @dataclass(frozen=True, slots=True)
 class ResidentApartment:
     id: uuid.UUID
+    building_id: uuid.UUID
     building_name: str
     apartment_label: str
     block: str | None
@@ -107,6 +111,49 @@ class FinanceStatementViewModel:
 
 
 PaginatedStatement = FinanceStatementViewModel
+
+
+@dataclass(frozen=True, slots=True)
+class MonthlyDueSummary:
+    year: int
+    month: int
+    charged: Decimal
+    paid: Decimal
+    remaining: Decimal
+    status_label: str
+
+
+@dataclass(frozen=True, slots=True)
+class MonthlyDueDetail:
+    apartment: ResidentApartment
+    year: int
+    month: int
+    items: tuple[tuple[str, Decimal], ...]
+    charged: Decimal
+    paid: Decimal
+    remaining: Decimal
+
+
+@dataclass(frozen=True, slots=True)
+class BankMovementItem:
+    transaction_date: date
+    description: str
+    inflow: Decimal
+    outflow: Decimal
+    balance: Decimal
+    category: str
+
+
+@dataclass(frozen=True, slots=True)
+class ExpenseDistributionItem:
+    expense_date: date
+    expense_month: date
+    category: str
+    payment_method: str
+    total_amount: Decimal
+    source_key: str
+    contribution: Decimal
+    description: str
 
 
 def format_try(value: Decimal) -> str:
@@ -188,6 +235,7 @@ def list_resident_apartments(
     return [
         ResidentApartment(
             id=apartment.id,
+            building_id=building.id,
             building_name=building.name,
             apartment_label=apartment.unit_code or apartment.number,
             block=apartment.block,
@@ -217,6 +265,254 @@ def resolve_resident_apartment(
     if selected is None:
         raise EntityNotFoundError("Daire bulunamadı.")
     return selected, apartments
+
+
+def get_monthly_due_summary(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    user_id: uuid.UUID,
+    apartment_id: uuid.UUID,
+    limit: int = 6,
+) -> tuple[MonthlyDueSummary, ...]:
+    selected, _ = resolve_resident_apartment(
+        session,
+        organization_id=organization_id,
+        user_id=user_id,
+        apartment_id=apartment_id,
+    )
+    if selected is None:
+        return ()
+    allocated = (
+        select(
+            PaymentAllocation.charge_id,
+            func.coalesce(func.sum(PaymentAllocation.amount), 0).label("paid"),
+        )
+        .join(Payment, Payment.id == PaymentAllocation.payment_id)
+        .where(
+            PaymentAllocation.organization_id == organization_id,
+            Payment.organization_id == organization_id,
+            Payment.apartment_id == apartment_id,
+            Payment.status == PaymentStatus.POSTED,
+        )
+        .group_by(PaymentAllocation.charge_id)
+        .subquery()
+    )
+    rows = session.execute(
+        select(
+            Charge.period_year,
+            Charge.period_month,
+            Charge.original_amount,
+            func.coalesce(allocated.c.paid, 0),
+        )
+        .outerjoin(allocated, allocated.c.charge_id == Charge.id)
+        .where(
+            Charge.organization_id == organization_id,
+            Charge.apartment_id == apartment_id,
+            Charge.status == ChargeStatus.POSTED,
+            Charge.period_year.is_not(None),
+            Charge.period_month.is_not(None),
+        )
+        .order_by(Charge.period_year.desc(), Charge.period_month.desc(), Charge.id)
+        .limit(limit)
+    )
+    result = []
+    for year, month, amount, paid_value in rows:
+        charged = Decimal(amount).quantize(Decimal("0.01"))
+        paid = min(Decimal(paid_value).quantize(Decimal("0.01")), charged)
+        remaining = max(charged - paid, ZERO)
+        status = (
+            "Ödendi"
+            if remaining == ZERO
+            else "Kısmi Ödendi"
+            if paid > ZERO
+            else "Ödenmedi"
+        )
+        result.append(
+            MonthlyDueSummary(
+                year=int(year),
+                month=int(month),
+                charged=charged,
+                paid=paid,
+                remaining=remaining,
+                status_label=status,
+            )
+        )
+    return tuple(result)
+
+
+def get_monthly_due_detail(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    user_id: uuid.UUID,
+    apartment_id: uuid.UUID,
+    year: int,
+    month: int,
+) -> MonthlyDueDetail:
+    selected, _ = resolve_resident_apartment(
+        session,
+        organization_id=organization_id,
+        user_id=user_id,
+        apartment_id=apartment_id,
+    )
+    if selected is None:
+        raise EntityNotFoundError("Daire bulunamadı.")
+    summary = next(
+        (
+            item
+            for item in get_monthly_due_summary(
+                session,
+                organization_id=organization_id,
+                user_id=user_id,
+                apartment_id=apartment_id,
+                limit=120,
+            )
+            if item.year == year and item.month == month
+        ),
+        None,
+    )
+    if summary is None:
+        raise EntityNotFoundError("Aidat dönemi bulunamadı.")
+    base_month = date(year - 1, 12, 1) if month == 1 else date(year, month - 1, 1)
+    rows = session.execute(
+        select(
+            BuildingExpense.category,
+            func.sum(ApartmentExpenseContribution.amount),
+        )
+        .join(
+            ApartmentExpenseContribution,
+            ApartmentExpenseContribution.expense_id == BuildingExpense.id,
+        )
+        .where(
+            BuildingExpense.organization_id == organization_id,
+            BuildingExpense.building_id == selected.building_id,
+            BuildingExpense.expense_month == base_month,
+            ApartmentExpenseContribution.organization_id == organization_id,
+            ApartmentExpenseContribution.apartment_id == apartment_id,
+        )
+        .group_by(BuildingExpense.category)
+        .order_by(BuildingExpense.category)
+    )
+    return MonthlyDueDetail(
+        apartment=selected,
+        year=year,
+        month=month,
+        items=tuple(
+            (category, Decimal(amount).quantize(Decimal("0.01")))
+            for category, amount in rows
+        ),
+        charged=summary.charged,
+        paid=summary.paid,
+        remaining=summary.remaining,
+    )
+
+
+def list_resident_bank_movements(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    user_id: uuid.UUID,
+    building_id: uuid.UUID,
+    page: int,
+    per_page: int,
+) -> tuple[tuple[BankMovementItem, ...], int]:
+    apartments = list_resident_apartments(
+        session, organization_id=organization_id, user_id=user_id
+    )
+    if building_id not in {item.building_id for item in apartments}:
+        raise EntityNotFoundError("Bina bulunamadı.")
+    page = max(page, 1)
+    per_page = per_page if per_page in {20, 50, 100} else 20
+    conditions = (
+        BuildingBankTransaction.organization_id == organization_id,
+        BuildingBankTransaction.building_id == building_id,
+    )
+    total = int(
+        session.scalar(select(func.count()).select_from(BuildingBankTransaction).where(*conditions))
+        or 0
+    )
+    rows = session.execute(
+        select(BuildingBankTransaction)
+        .where(*conditions)
+        .order_by(
+            BuildingBankTransaction.transaction_date.desc(),
+            BuildingBankTransaction.id.desc(),
+        )
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    ).scalars()
+    return (
+        tuple(
+            BankMovementItem(
+                transaction_date=item.transaction_date,
+                description=item.description,
+                inflow=Decimal(item.inflow),
+                outflow=Decimal(item.outflow),
+                balance=Decimal(item.balance),
+                category=item.category,
+            )
+            for item in rows
+        ),
+        total,
+    )
+
+
+def list_resident_expenses(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    user_id: uuid.UUID,
+    apartment_id: uuid.UUID,
+    page: int,
+    per_page: int,
+) -> tuple[tuple[ExpenseDistributionItem, ...], int]:
+    selected, _ = resolve_resident_apartment(
+        session,
+        organization_id=organization_id,
+        user_id=user_id,
+        apartment_id=apartment_id,
+    )
+    if selected is None:
+        raise EntityNotFoundError("Daire bulunamadı.")
+    page = max(page, 1)
+    per_page = per_page if per_page in {20, 50, 100} else 20
+    conditions = (
+        BuildingExpense.organization_id == organization_id,
+        BuildingExpense.building_id == selected.building_id,
+        ApartmentExpenseContribution.organization_id == organization_id,
+        ApartmentExpenseContribution.apartment_id == apartment_id,
+    )
+    base = (
+        select(BuildingExpense, ApartmentExpenseContribution.amount.label("share"))
+        .join(
+            ApartmentExpenseContribution,
+            ApartmentExpenseContribution.expense_id == BuildingExpense.id,
+        )
+        .where(*conditions)
+    )
+    total = int(session.scalar(select(func.count()).select_from(base.subquery())) or 0)
+    rows = session.execute(
+        base.order_by(BuildingExpense.expense_date.desc(), BuildingExpense.id)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
+    )
+    return (
+        tuple(
+            ExpenseDistributionItem(
+                expense_date=expense.expense_date,
+                expense_month=expense.expense_month,
+                category=expense.category,
+                payment_method=expense.payment_method,
+                total_amount=Decimal(expense.amount),
+                source_key=expense.source_key,
+                contribution=Decimal(share),
+                description=expense.description,
+            )
+            for expense, share in rows
+        ),
+        total,
+    )
 
 
 def _payment_allocations(

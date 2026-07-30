@@ -18,9 +18,13 @@ from app.services.resident_announcements import (
 from app.services.resident_finances import (
     StatementFilters,
     format_try,
+    get_monthly_due_detail,
+    get_monthly_due_summary,
     get_resident_account_statement,
     get_resident_dashboard,
     get_resident_payments,
+    list_resident_bank_movements,
+    list_resident_expenses,
     resolve_resident_apartment,
 )
 from app.services.resident_notifications import (
@@ -121,6 +125,16 @@ def account() -> Any:
             if selected
             else None
         )
+        due_summary = (
+            get_monthly_due_summary(
+                db.session,
+                organization_id=_organization_id(),
+                user_id=current_user.id,
+                apartment_id=selected.id,
+            )
+            if selected
+            else ()
+        )
     except EntityNotFoundError:
         abort(404)
     return render_template(
@@ -128,6 +142,116 @@ def account() -> Any:
         selected=selected,
         apartments=apartments,
         statement=statement,
+        due_summary=due_summary,
+        format_try=format_try,
+    )
+
+
+@resident_blueprint.get(
+    "/resident/apartments/<uuid:apartment_id>/dues/<int:year>/<int:month>"
+)
+@resident_required
+def due_month_detail(apartment_id: uuid.UUID, year: int, month: int) -> str:
+    if not 1 <= month <= 12:
+        abort(404)
+    try:
+        detail = get_monthly_due_detail(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            apartment_id=apartment_id,
+            year=year,
+            month=month,
+        )
+    except EntityNotFoundError:
+        abort(404)
+    return render_template(
+        "resident/due_month_detail.html", detail=detail, format_try=format_try
+    )
+
+
+@resident_blueprint.get("/resident/bank-transactions")
+@resident_required
+def bank_transactions() -> str:
+    try:
+        selected, apartments = resolve_resident_apartment(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            apartment_id=_requested_apartment_id(),
+        )
+        if selected is None:
+            return render_template(
+                "resident/bank_transactions.html",
+                items=(),
+                total=0,
+                selected=None,
+                apartments=apartments,
+                page=1,
+                per_page=_per_page(),
+                format_try=format_try,
+            )
+        items, total = list_resident_bank_movements(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            building_id=selected.building_id,
+            page=_page(),
+            per_page=_per_page(),
+        )
+    except EntityNotFoundError:
+        abort(404)
+    return render_template(
+        "resident/bank_transactions.html",
+        items=items,
+        total=total,
+        page=_page(),
+        per_page=_per_page(),
+        selected=selected,
+        apartments=apartments,
+        format_try=format_try,
+    )
+
+
+@resident_blueprint.get("/resident/expenses")
+@resident_required
+def expenses() -> str:
+    try:
+        selected, apartments = resolve_resident_apartment(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            apartment_id=_requested_apartment_id(),
+        )
+        if selected is None:
+            return render_template(
+                "resident/expenses.html",
+                items=(),
+                total=0,
+                selected=None,
+                apartments=apartments,
+                page=1,
+                per_page=_per_page(),
+                format_try=format_try,
+            )
+        items, total = list_resident_expenses(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            apartment_id=selected.id,
+            page=_page(),
+            per_page=_per_page(),
+        )
+    except EntityNotFoundError:
+        abort(404)
+    return render_template(
+        "resident/expenses.html",
+        items=items,
+        total=total,
+        page=_page(),
+        per_page=_per_page(),
+        selected=selected,
+        apartments=apartments,
         format_try=format_try,
     )
 
@@ -190,6 +314,7 @@ def announcements() -> str:
         user_id=current_user.id,
         page=_page(),
         per_page=request.args.get("per_page", 20, type=int) or 20,
+        include_scheduled=True,
     )
     return render_template("resident/announcements/index.html", listing=listing)
 
@@ -203,13 +328,15 @@ def announcement_detail(announcement_id: uuid.UUID) -> str:
             organization_id=_organization_id(),
             user_id=current_user.id,
             announcement_id=announcement_id,
+            include_scheduled=True,
         )
-        mark_announcement_read(
-            db.session,
-            organization_id=_organization_id(),
-            user_id=current_user.id,
-            announcement_id=announcement_id,
-        )
+        if not announcement.is_scheduled:
+            mark_announcement_read(
+                db.session,
+                organization_id=_organization_id(),
+                user_id=current_user.id,
+                announcement_id=announcement_id,
+            )
         db.session.commit()
     except EntityNotFoundError:
         db.session.rollback()

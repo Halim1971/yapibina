@@ -36,6 +36,7 @@ class ResidentAnnouncementItem:
     published_at: datetime
     expires_at: datetime | None
     is_read: bool
+    status_label: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +55,8 @@ class ResidentAnnouncementDetail:
     body: str
     published_at: datetime
     expires_at: datetime | None
+    status_label: str
+    is_scheduled: bool
 
 
 def resident_announcement_visibility_conditions(
@@ -61,6 +64,7 @@ def resident_announcement_visibility_conditions(
     organization_id: uuid.UUID,
     user_id: uuid.UUID,
     now: datetime,
+    include_scheduled: bool = False,
 ) -> tuple[ColumnElement[bool], ...]:
     active_building_target = exists(
         select(1)
@@ -119,8 +123,16 @@ def resident_announcement_visibility_conditions(
         Announcement.organization_id == organization_id,
         Announcement.status == AnnouncementStatus.PUBLISHED,
         Announcement.published_at.is_not(None),
-        Announcement.published_at <= now,
-        or_(Announcement.expires_at.is_(None), Announcement.expires_at > now),
+        (
+            Announcement.published_at.is_not(None)
+            if include_scheduled
+            else Announcement.published_at <= now
+        ),
+        (
+            or_(Announcement.expires_at.is_(None), Announcement.expires_at > now)
+            if not include_scheduled
+            else Announcement.expires_at.is_(None)
+        ),
         active_user,
         active_organization_membership,
         or_(
@@ -142,12 +154,16 @@ def list_resident_announcements(
     per_page: int = 20,
     now: datetime | None = None,
     include_read_state: bool = True,
+    include_scheduled: bool = False,
 ) -> ResidentAnnouncementPage:
     reference = as_utc(now or utc_now())
     page = max(page, 1)
     per_page = per_page if per_page in ALLOWED_PAGE_SIZES else 20
     conditions = resident_announcement_visibility_conditions(
-        organization_id=organization_id, user_id=user_id, now=reference
+        organization_id=organization_id,
+        user_id=user_id,
+        now=reference,
+        include_scheduled=include_scheduled,
     )
     count_value = session.execute(
         select(func.count(Announcement.id)).where(*conditions)
@@ -192,6 +208,11 @@ def list_resident_announcements(
                 published_at=as_utc(row.published_at),
                 expires_at=as_utc(row.expires_at) if row.expires_at else None,
                 is_read=bool(row.is_read),
+                status_label=(
+                    "Planlandı"
+                    if as_utc(row.published_at) > reference
+                    else "Gönderildi"
+                ),
             )
             for row in rows
         ),
@@ -209,6 +230,7 @@ def get_resident_announcement(
     user_id: uuid.UUID,
     announcement_id: uuid.UUID,
     now: datetime | None = None,
+    include_scheduled: bool = False,
 ) -> ResidentAnnouncementDetail:
     reference = as_utc(now or utc_now())
     row = session.execute(
@@ -223,6 +245,7 @@ def get_resident_announcement(
                 organization_id=organization_id,
                 user_id=user_id,
                 now=reference,
+                include_scheduled=include_scheduled,
             ),
             Announcement.id == announcement_id,
         )
@@ -235,4 +258,8 @@ def get_resident_announcement(
         body=row.body,
         published_at=as_utc(row.published_at),
         expires_at=as_utc(row.expires_at) if row.expires_at else None,
+        status_label=(
+            "Planlandı" if as_utc(row.published_at) > reference else "Gönderildi"
+        ),
+        is_scheduled=as_utc(row.published_at) > reference,
     )

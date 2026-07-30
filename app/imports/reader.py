@@ -6,13 +6,17 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, cast
+from zoneinfo import ZoneInfo
 
 from openpyxl import load_workbook  # type: ignore[import-untyped]
 
 from app.imports.constants import SUPPORTED_CURRENCY, SUPPORTED_SCHEMA_VERSION
 from app.imports.exceptions import PackageValidationError
 from app.imports.schemas import (
+    BankTransactionRow,
     ChargeRow,
+    DemoAnnouncementRow,
+    ExpenseRow,
     PaymentRow,
     ResidentUnitRow,
     SiteRow,
@@ -101,6 +105,13 @@ EXPENSE_CATEGORIES = {
     "repair",
 }
 ANNOUNCEMENT_PRIORITIES = {"normal", "important", "urgent"}
+DEMO_WORKBOOK_NAMES = {
+    "B001_Yapibina_Cinar_Apartmani_Degisken_Aidat_Demo.xlsx",
+    "B002_Mavişehir_Apartmanı_Degisken_Aidat_Demo.xlsx",
+    "B003_Ihlamur_Apartmanı_Degisken_Aidat_Demo.xlsx",
+    "B004_Güneş_Apartmanı_Degisken_Aidat_Demo.xlsx",
+    "B005_Deniz_Apartmanı_Degisken_Aidat_Demo.xlsx",
+}
 
 
 def _sha256(path: Path) -> str:
@@ -260,6 +271,7 @@ def _unit_rows(
                 phone=_optional_text(row, "phone"),
                 email=email,
                 is_active=_boolean(row, "is_active"),
+                initial_password=None,
                 payload_hash=_payload_hash(row),
             )
         )
@@ -318,6 +330,7 @@ def _payment_rows(
                 amount=_decimal(row, "amount"),
                 reference=_optional_text(row, "reference"),
                 description=_optional_text(row, "description"),
+                target_charge_source_key=None,
                 payload_hash=_payload_hash(row),
             )
         )
@@ -356,6 +369,8 @@ def _validate_deferred_rows(
 def read_standard_package(path: Path) -> StandardPackage:
     root = path.resolve()
     manifest_path = root / "manifest.json"
+    if not manifest_path.is_file():
+        return _read_demo_workbooks(root)
     try:
         manifest = cast(
             dict[str, Any],
@@ -452,18 +467,308 @@ def read_standard_package(path: Path) -> StandardPackage:
     )
 
 
+def _money(value: object, *, allow_zero: bool = False) -> Decimal:
+    try:
+        result = Decimal(str(value)).quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError) as error:
+        raise PackageValidationError("Demo Excel tutarı geçersiz.") from error
+    if result < 0 or (not allow_zero and result == 0):
+        raise PackageValidationError("Demo Excel tutarı negatif veya sıfır olamaz.")
+    return result
+
+
+def _demo_rows(workbook: Any, sheet_name: str) -> list[tuple[object, ...]]:
+    if sheet_name not in workbook.sheetnames:
+        raise PackageValidationError(f"Demo Excel sheet bulunamadı: {sheet_name}")
+    rows = list(workbook[sheet_name].iter_rows(values_only=True))
+    if len(rows) < 3:
+        raise PackageValidationError(f"Demo Excel sheet boş: {sheet_name}")
+    return [cast(tuple[object, ...], row) for row in rows[3:] if row[0] is not None]
+
+
+def _demo_date(value: object) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    raise PackageValidationError("Demo Excel tarih hücresi geçersiz.")
+
+
+def _read_demo_workbooks(root: Path) -> StandardPackage:
+    files = sorted(root.glob("*.xlsx"), key=lambda item: item.name)
+    if {item.name for item in files} != DEMO_WORKBOOK_NAMES:
+        raise PackageValidationError("Demo paketi beklenen beş bina Excelini içermelidir.")
+    sites: list[SiteRow] = []
+    units: list[ResidentUnitRow] = []
+    charges: list[ChargeRow] = []
+    payments: list[PaymentRow] = []
+    expenses: list[ExpenseRow] = []
+    bank_transactions: list[BankTransactionRow] = []
+    announcements: list[DemoAnnouncementRow] = []
+    file_hashes: list[tuple[str, str]] = []
+    istanbul = ZoneInfo("Europe/Istanbul")
+    announcement_specs = (
+        (
+            "2026-06",
+            "Haziran 2026 Aidat Son Ödeme Tarihi",
+            "Haziran 2026 aidatının son ödeme tarihi 20 Haziran 2026’dır.",
+            datetime(2026, 6, 5, 9, tzinfo=istanbul),
+        ),
+        (
+            "2026-07",
+            "Temmuz 2026 Aidat Son Ödeme Tarihi",
+            "Temmuz 2026 aidatının son ödeme tarihi 20 Temmuz 2026’dır.",
+            datetime(2026, 7, 5, 9, tzinfo=istanbul),
+        ),
+        (
+            "2026-08",
+            "Ağustos 2026 Aidat Son Ödeme Tarihi",
+            "Ağustos 2026 aidatının son ödeme tarihi 20 Ağustos 2026’dır.",
+            datetime(2026, 8, 5, 9, tzinfo=istanbul),
+        ),
+    )
+    for file_path in files:
+        file_hashes.append((file_path.name, _sha256(file_path)))
+        try:
+            workbook = load_workbook(file_path, read_only=True, data_only=True)
+        except (OSError, ValueError) as error:
+            raise PackageValidationError(f"Demo Excel okunamadı: {file_path.name}") from error
+        summary = {
+            str(row[0]): row[1]
+            for row in workbook["Özet"].iter_rows(min_row=3, values_only=True)
+            if row[0] is not None
+        }
+        site_key = str(summary.get("Bina Kodu", "")).strip()
+        site_name = str(summary.get("Bina", "")).strip()
+        if not site_key or not site_name:
+            raise PackageValidationError("Demo Excel bina kimliği eksik.")
+        district = str(summary.get("Konum") or "İstanbul")
+        site_payload: dict[str, object] = {
+            "source_site_key": site_key,
+            "site_name": site_name,
+            "district": district,
+        }
+        sites.append(
+            SiteRow(
+                source_site_key=site_key,
+                site_name=site_name,
+                site_slug=site_key.lower(),
+                city="İstanbul",
+                district=district,
+                address_line=district,
+                is_active=True,
+                payload_hash=_payload_hash(site_payload),
+            )
+        )
+        resident_codes: list[str] = []
+        for row in _demo_rows(workbook, "Sakinler"):
+            unit_number = str(row[0])
+            resident_code = str(row[1]).strip()
+            resident_codes.append(resident_code)
+            data = {
+                "site": site_key,
+                "unit": unit_number,
+                "resident": resident_code,
+                "name": str(row[2]).strip(),
+                "active": str(row[5]).strip() == "Aktif",
+            }
+            units.append(
+                ResidentUnitRow(
+                    source_site_key=site_key,
+                    source_unit_key=resident_code,
+                    block_name=None,
+                    unit_number=unit_number,
+                    floor_label=None,
+                    resident_source_key=resident_code,
+                    resident_full_name=str(row[2]).strip(),
+                    phone=None,
+                    email=f"{resident_code.lower()}@example.com",
+                    is_active=data["active"] is True,
+                    initial_password="YapibinaDemo2026!",
+                    payload_hash=_payload_hash(data),
+                )
+            )
+        for row in _demo_rows(workbook, "Giderler"):
+            contributions = tuple(
+                (resident_code, _money(row[7 + index], allow_zero=True))
+                for index, resident_code in enumerate(resident_codes)
+            )
+            amount = _money(row[5])
+            contribution_total = sum(
+                (value for _, value in contributions), Decimal("0")
+            )
+            if abs(contribution_total - amount) > Decimal("0.05"):
+                raise PackageValidationError("Demo gider payları toplam giderle eşleşmiyor.")
+            data = {
+                "site": site_key,
+                "key": row[6],
+                "date": _demo_date(row[0]),
+                "amount": amount,
+                "contributions": tuple(
+                    (key, str(value)) for key, value in contributions
+                ),
+            }
+            expenses.append(
+                ExpenseRow(
+                    source_site_key=site_key,
+                    source_expense_key=str(row[6]),
+                    expense_date=_demo_date(row[0]),
+                    expense_month=_demo_date(row[1]),
+                    category=str(row[2]).strip(),
+                    description=str(row[3]).strip(),
+                    payment_method=str(row[4]).strip(),
+                    amount=amount,
+                    contributions=contributions,
+                    payload_hash=_payload_hash(data),
+                )
+            )
+        for row in _demo_rows(workbook, "Aidat Ekstresi"):
+            period = _demo_date(row[0])
+            resident_code = str(row[2]).strip()
+            amount = _money(row[16])
+            paid = _money(row[17], allow_zero=True)
+            remaining = _money(row[19], allow_zero=True)
+            if abs(amount - paid - remaining) > Decimal("0.02"):
+                raise PackageValidationError("Demo aidat toplamı ödeme ve kalanla eşleşmiyor.")
+            charge_data = {
+                "site": site_key, "resident": resident_code, "period": period, "amount": amount
+            }
+            charges.append(
+                ChargeRow(
+                    source_site_key=site_key,
+                    source_charge_key=f"{resident_code}-AIDAT-{period:%Y-%m}",
+                    source_unit_key=resident_code,
+                    charge_date=period,
+                    due_date=date(period.year, period.month, 20),
+                    period_year=period.year,
+                    period_month=period.month,
+                    charge_type="monthly_due",
+                    title=f"{period:%m/%Y} Aidatı",
+                    description=f"{_demo_date(row[1]):%m/%Y} ortak gider payı",
+                    amount=amount,
+                    payload_hash=_payload_hash(charge_data),
+                )
+            )
+            if paid > 0:
+                payment_date = _demo_date(row[18])
+                payment_data = {
+                    "site": site_key, "resident": resident_code, "period": period, "amount": paid
+                }
+                payments.append(
+                    PaymentRow(
+                        source_site_key=site_key,
+                        source_payment_key=f"{resident_code}-ODEME-{period:%Y-%m}",
+                        source_unit_key=resident_code,
+                        payment_date=payment_date,
+                        payment_method="bank_transfer",
+                        amount=paid,
+                        reference=f"{resident_code}-{period:%m}",
+                        description=f"{period:%m/%Y} aidat ödemesi",
+                        target_charge_source_key=(
+                            f"{resident_code}-AIDAT-{period:%Y-%m}"
+                        ),
+                        payload_hash=_payload_hash(payment_data),
+                    )
+                )
+        previous_balance: Decimal | None = None
+        for row_number, row in enumerate(_demo_rows(workbook, "Banka Hareketleri"), 1):
+            inflow = _money(row[3], allow_zero=True)
+            outflow = _money(row[4], allow_zero=True)
+            balance = _money(row[5], allow_zero=True)
+            if inflow > 0 and outflow > 0:
+                raise PackageValidationError("Banka hareketi aynı anda giriş ve çıkış olamaz.")
+            balance_difference = (
+                previous_balance + inflow - outflow - balance
+                if previous_balance is not None
+                else Decimal("0")
+            )
+            if previous_balance is not None and abs(balance_difference) > Decimal("0.02"):
+                raise PackageValidationError("Banka hareketi bakiyesi tutarsız.")
+            previous_balance = balance
+            reference = str(row[7] or f"{site_key}-BANK-{row_number:04d}")
+            data = {
+                "site": site_key,
+                "reference": reference,
+                "date": _demo_date(row[0]),
+                "balance": balance,
+            }
+            bank_transactions.append(
+                BankTransactionRow(
+                    source_site_key=site_key,
+                    source_transaction_key=f"{reference}-{row_number:04d}",
+                    transaction_date=_demo_date(row[0]),
+                    description=str(row[1]).strip(),
+                    transaction_type=str(row[2]).strip(),
+                    inflow=inflow,
+                    outflow=outflow,
+                    balance=balance,
+                    category=str(row[6]).strip(),
+                    reference=reference,
+                    payload_hash=_payload_hash(data),
+                )
+            )
+        for suffix, title, body, published_at in announcement_specs:
+            key = f"{site_key}-DUYURU-{suffix}"
+            announcements.append(
+                DemoAnnouncementRow(
+                    source_site_key=site_key,
+                    source_announcement_key=key,
+                    title=title,
+                    body=body,
+                    published_at=published_at,
+                    payload_hash=_payload_hash(
+                        {
+                            "key": key,
+                            "title": title,
+                            "body": body,
+                            "published_at": published_at,
+                        }
+                    ),
+                )
+            )
+    fingerprint_material = json.dumps(
+        file_hashes, ensure_ascii=False, separators=(",", ":")
+    ).encode()
+    fingerprint = hashlib.sha256(fingerprint_material).hexdigest()
+    return StandardPackage(
+        root=root,
+        dataset_name="Yapıbina Beş Bina Demo",
+        dataset_version="2026.07",
+        schema_version="demo-building-v1",
+        manifest_sha256=fingerprint,
+        fingerprint=fingerprint,
+        sites=tuple(sites),
+        units=tuple(units),
+        charges=tuple(charges),
+        payments=tuple(payments),
+        expense_count=len(expenses),
+        announcement_count=len(announcements),
+        expenses=tuple(expenses),
+        bank_transactions=tuple(bank_transactions),
+        demo_announcements=tuple(announcements),
+    )
+
+
 def validate_package_relationships(package: StandardPackage) -> None:
     site_keys = [row.source_site_key for row in package.sites]
     unit_keys = [row.source_unit_key for row in package.units]
     resident_keys = [row.resident_source_key for row in package.units]
     charge_keys = [row.source_charge_key for row in package.charges]
     payment_keys = [row.source_payment_key for row in package.payments]
+    expense_keys = [row.source_expense_key for row in package.expenses]
+    bank_keys = [row.source_transaction_key for row in package.bank_transactions]
+    announcement_keys = [
+        row.source_announcement_key for row in package.demo_announcements
+    ]
     for values, label in (
         (site_keys, "source_site_key"),
         (unit_keys, "source_unit_key"),
         (resident_keys, "resident_source_key"),
         (charge_keys, "source_charge_key"),
         (payment_keys, "source_payment_key"),
+        (expense_keys, "source_expense_key"),
+        (bank_keys, "source_transaction_key"),
+        (announcement_keys, "source_announcement_key"),
     ):
         if len(values) != len(set(values)):
             raise PackageValidationError(f"{label} benzersiz olmalıdır.")
@@ -481,3 +786,9 @@ def validate_package_relationships(package: StandardPackage) -> None:
     )
     if charge_reference_invalid or payment_reference_invalid:
         raise PackageValidationError("Finans kaydı unit/site referansı geçersiz.")
+    if any(
+        row.source_site_key not in site_set
+        or any(unit_key not in unit_set for unit_key, _ in row.contributions)
+        for row in package.expenses
+    ):
+        raise PackageValidationError("Gider contribution referansı geçersiz.")

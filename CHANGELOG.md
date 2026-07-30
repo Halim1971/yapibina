@@ -68,3 +68,7 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
   iletişim özeti; finans ekstresinde açıklama/tarih/tür filtreleri
 - HTML/PDF/e-posta/gelecekteki API taşıma katmanlarından bağımsız typed
   `FinanceStatementViewModel` ve resident finans query-count regresyonları
+- Beş sentetik bina workbook’unu doğrudan okuyan canonical demo import akışı
+- Daire bazlı altı aylık Aidat Ekstresi ve önceki ay gider payı detayı
+- Bina kapsamlı Banka Hesap Hareketleri ve yalnız seçili dairenin Gider Dağılımı
+- Her demo bina için iki gönderilmiş, bir planlanmış mevcut Announcement kaydı

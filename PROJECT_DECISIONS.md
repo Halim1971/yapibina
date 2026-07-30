@@ -852,6 +852,23 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
   `/api/v1` presentation katmanlarınca kullanılabilir. Bu karar PDF, e-posta,
   banka entegrasyonu veya JSON API uygulamaz.
 
+## D-078 — Beş bina Exceli MVP’nin canonical demo kaynağıdır
+
+- **Karar:** Bu fazda yalnız `deneme/` altındaki B001–B005 workbook’ları
+  importer girdisidir. Apsiyon, harici adapter ve genel amaçlı mapping yoktur.
+- **İzolasyon:** Aidat ve gider katkısı apartment’a; banka hareketi ve hedefli
+  duyuru building’e aittir. Bütün kayıtlar ayrıca organization scope taşır.
+- **Aidat semantiği:** Aylık charge, bir önceki ayın Excel’de hesaplanmış gider
+  paylarından oluşur. Ödeme ilgili aylık charge’a allocate edilir; kullanılmamış
+  payment açık borcu azaltmaz.
+- **Duyuru semantiği:** Haziran ve Temmuz kayıtları gönderilmiş, Ağustos kaydı
+  gelecekteki `published_at` ile planlanmıştır. Planlanan kayıt Duyurular
+  ekranında görülebilir ancak yayın zamanı gelmeden Notification Center veya
+  okunmamış sayısına dahil edilmez.
+- **Demo hesabı:** Resident kodundan `example.com` e-postası türetilir. Sabit
+  demo parolası yalnız sentetik veri gösterimi içindir ve gerçek müşteri
+  hesapları için bir provisioning kararı değildir.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

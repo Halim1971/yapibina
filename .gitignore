@@ -22,8 +22,26 @@ htmlcov/
 instance/*
 !instance/.gitkeep
 uploads/
+tmp/
+temp/
+import_tmp/
+import_extract/
+.clipboard/
+*.db
+*.sqlite
+*.sqlite3
 *.log
 logs/
+
+# Deployment credentials and private keys
+secrets/
+credentials/
+deploy/*.env
+deploy/secrets/
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Editors and operating systems
 .idea/

@@ -23,7 +23,15 @@ from app.models.enums import (
     PaymentStatus,
     UserStatus,
 )
-from app.models.financial import Charge, ChargeBatch, Payment, PaymentAllocation
+from app.models.financial import (
+    ApartmentExpenseContribution,
+    BuildingBankTransaction,
+    BuildingExpense,
+    Charge,
+    ChargeBatch,
+    Payment,
+    PaymentAllocation,
+)
 from app.models.membership import OrganizationMembership
 from app.models.organization import Organization, OrganizationBranding
 from app.models.user import User
@@ -32,6 +40,7 @@ __all__ = [
     "Apartment",
     "ApartmentMembership",
     "ApartmentMembershipRole",
+    "ApartmentExpenseContribution",
     "Announcement",
     "AnnouncementAudienceScope",
     "AnnouncementBuilding",
@@ -40,6 +49,8 @@ __all__ = [
     "Building",
     "BuildingMembership",
     "BuildingMembershipRole",
+    "BuildingBankTransaction",
+    "BuildingExpense",
     "Charge",
     "ChargeBatch",
     "ChargeBatchStatus",

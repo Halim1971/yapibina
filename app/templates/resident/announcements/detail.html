@@ -3,6 +3,15 @@
 {% block title %}{{ announcement.title }}{% endblock %}
 {% block navigation %}{{ resident_nav() }}{% endblock %}
 {% block content %}
-<section class="page-header"><div><p class="eyebrow">{{ announcement.published_at|datetime_tr }}</p><h1>{{ announcement.title }}</h1></div><a href="{{ url_for('resident.announcements') }}">Duyurulara Dön</a></section>
-<article class="detail-card"><div class="announcement-body">{{ announcement.body }}</div>{% if announcement.expires_at %}<p class="muted">Son görünme: {{ announcement.expires_at|datetime_tr }}</p>{% endif %}</article>
+<section class="panel wide resident-page resident-detail-page">
+  <a class="back-link" href="{{ url_for('resident.announcements') }}"><span aria-hidden="true">←</span> Duyurulara dön</a>
+  <header class="resident-page-header">
+    <div class="badge-group"><span class="badge status-badge">{{ announcement.status_label }}</span><time class="card-date" datetime="{{ announcement.published_at.isoformat() }}">{{ announcement.published_at|datetime_tr }}</time></div>
+    <h1>{{ announcement.title }}</h1>
+  </header>
+  <article class="detail-card announcement-detail-card">
+    <div class="announcement-body">{{ announcement.body }}</div>
+    {% if announcement.expires_at %}<p class="muted detail-meta">Son görünme: {{ announcement.expires_at|datetime_tr }}</p>{% endif %}
+  </article>
+</section>
 {% endblock %}

@@ -3,11 +3,38 @@
 {% block title %}Duyurular{% endblock %}
 {% block navigation %}{{ resident_nav() }}{% endblock %}
 {% block content %}
-<section class="page-header"><div><p class="eyebrow">Yönetimden</p><h1>Duyurular</h1></div></section>
-{% if listing.items %}
-<div class="announcement-list">{% for item in listing.items %}
-  <article class="detail-card"><p class="eyebrow">{{ item.published_at|datetime_tr }} · <span class="badge">{{ "Okundu" if item.is_read else "Okunmamış" }}</span></p><h2><a href="{{ url_for('resident.announcement_detail', announcement_id=item.id) }}">{{ item.title }}</a></h2><p>{{ item.body_preview }}</p></article>
-{% endfor %}</div>
-{% if listing.pages > 1 %}<nav class="pagination" aria-label="Sayfalar">{% for number in range(1, listing.pages + 1) %}<a {% if number == listing.page %}aria-current="page"{% endif %} href="{{ url_for('resident.announcements', page=number, per_page=listing.per_page) }}">{{ number }}</a>{% endfor %}</nav>{% endif %}
-{% else %}<div class="empty-state"><h2>Henüz yayınlanmış duyuru bulunmuyor.</h2><p>Yeni duyurular burada gösterilecektir.</p></div>{% endif %}
+<section class="panel wide resident-page">
+  <header class="resident-page-header">
+    <div>
+      <p class="eyebrow">Yönetiminizden güncel bilgiler</p>
+      <h1>Duyurular</h1>
+      <p class="page-intro">Binanız ve yönetiminiz tarafından paylaşılan duyuruları buradan takip edebilirsiniz.</p>
+    </div>
+  </header>
+  {% if listing.items %}
+    <div class="announcement-list">
+      {% for item in listing.items %}
+        <article class="detail-card announcement-card {{ 'scheduled' if item.status_label == 'Planlandı' else 'sent' }}">
+          <div class="card-heading">
+            <div class="badge-group">
+              <span class="badge status-badge">{{ item.status_label }}</span>
+              {% if item.status_label == "Gönderildi" %}<span class="badge read-badge">{{ "Okundu" if item.is_read else "Okunmamış" }}</span>{% endif %}
+            </div>
+            <time class="card-date" datetime="{{ item.published_at.isoformat() }}">{{ item.published_at|datetime_tr }}</time>
+          </div>
+          <h2><a class="card-link" href="{{ url_for('resident.announcement_detail', announcement_id=item.id) }}">{{ item.title }}</a></h2>
+          <p>{{ item.body_preview }}</p>
+          <a class="text-link" href="{{ url_for('resident.announcement_detail', announcement_id=item.id) }}">Duyuruyu oku <span aria-hidden="true">→</span></a>
+        </article>
+      {% endfor %}
+    </div>
+    {% if listing.pages > 1 %}
+      <nav class="pagination" aria-label="Duyuru sayfaları">
+        {% for number in range(1, listing.pages + 1) %}<a {% if number == listing.page %}aria-current="page"{% endif %} href="{{ url_for('resident.announcements', page=number, per_page=listing.per_page) }}">{{ number }}</a>{% endfor %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">◇</span><div><h2>Henüz duyuru bulunmuyor</h2><p>Yeni bir duyuru paylaşıldığında bu ekranda görebileceksiniz.</p></div></div>
+  {% endif %}
+</section>
 {% endblock %}

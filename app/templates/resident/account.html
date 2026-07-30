@@ -1,89 +1,60 @@
 {% extends "base.html" %}
 {% from "components/nav.html" import resident_nav with context %}
-{% block title %}Hesap hareketlerim{% endblock %}
+{% block title %}Aidat Ekstresi{% endblock %}
 {% block navigation %}{{ resident_nav(selected.id if selected else none) }}{% endblock %}
 {% block content %}
 <section class="panel wide resident-page">
-  <h1>Hesap hareketlerim</h1>
   {% if not selected %}
-    <div class="empty-state">Henüz hesabınıza bağlı aktif bir daire bulunmuyor.</div>
+    <header class="resident-page-header"><p class="eyebrow">Dairenizin finansal özeti</p><h1>Aidat Ekstresi</h1></header>
+    <div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">⌂</span><div><h2>Aktif daire bağlantısı bulunmuyor</h2><p>Aidat bilgilerinizi görüntüleyebilmek için yönetiminizle iletişime geçin.</p></div></div>
   {% else %}
+    <header class="resident-page-header"><div><p class="eyebrow">Daire {{ selected.apartment_label }}</p><h1>{{ selected.building_name }} Aidat Ekstresi</h1><p class="page-intro">Son altı aya ait tahakkuk, ödeme ve kalan borç özetiniz.</p></div></header>
     {% if apartments|length > 1 %}
       <form method="get" class="resident-apartment-picker">
         <label for="apartment_id">Daire seçin</label>
         <select id="apartment_id" name="apartment_id" onchange="this.form.submit()">
-          {% for apartment in apartments %}
-            <option value="{{ apartment.id }}" {% if apartment.id == selected.id %}selected{% endif %}>{{ apartment.building_name }} · {{ apartment.apartment_label }}</option>
-          {% endfor %}
+          {% for apartment in apartments %}<option value="{{ apartment.id }}" {% if apartment.id == selected.id %}selected{% endif %}>{{ apartment.building_name }} · {{ apartment.apartment_label }}</option>{% endfor %}
         </select>
         <noscript><button type="submit">Göster</button></noscript>
       </form>
     {% endif %}
-    <p>{{ selected.building_name }} · Daire {{ selected.apartment_label }}</p>
     <div class="resident-summary finance-summary">
-      <article><span>Güncel bakiye</span><strong>{{ format_try(statement.current_balance) }}</strong></article>
-      <article><span>Toplam borç</span><strong>{{ format_try(statement.total_charges) }}</strong></article>
-      <article><span>Toplam ödeme</span><strong>{{ format_try(statement.total_payments) }}</strong><small>Kaydedilmiş geçerli ödemeler</small></article>
-      <article><span>Son ödeme</span><strong>{{ statement.latest_payment_date.strftime("%d.%m.%Y") if statement.latest_payment_date else "—" }}</strong></article>
-      <article><span>Son tahakkuk</span><strong>{{ statement.latest_charge_date.strftime("%d.%m.%Y") if statement.latest_charge_date else "—" }}</strong></article>
+      <article class="metric-card primary-metric"><span>Güncel bakiye</span><strong>{{ format_try(statement.current_balance) }}</strong></article>
+      <article class="metric-card"><span>Toplam tahakkuk</span><strong>{{ format_try(statement.total_charges) }}</strong></article>
+      <article class="metric-card"><span>Toplam ödeme</span><strong>{{ format_try(statement.total_payments) }}</strong></article>
     </div>
-
-    <form method="get" class="resident-statement-filters" aria-label="Hesap hareketi filtreleri">
-      <input type="hidden" name="apartment_id" value="{{ selected.id }}">
-      <div>
-        <label for="q">Açıklamada ara</label>
-        <input id="q" name="q" type="search" value="{{ statement.filters.query }}" placeholder="Aidat veya ödeme açıklaması">
-      </div>
-      <div>
-        <label for="date_from">Başlangıç tarihi</label>
-        <input id="date_from" name="date_from" type="date" value="{{ statement.filters.date_from.isoformat() if statement.filters.date_from else '' }}">
-      </div>
-      <div>
-        <label for="date_to">Bitiş tarihi</label>
-        <input id="date_to" name="date_to" type="date" value="{{ statement.filters.date_to.isoformat() if statement.filters.date_to else '' }}">
-      </div>
-      <div>
-        <label for="type">Hareket türü</label>
-        <select id="type" name="type">
-          <option value="all" {% if statement.filters.movement_type == "all" %}selected{% endif %}>Hepsi</option>
-          <option value="debt" {% if statement.filters.movement_type == "debt" %}selected{% endif %}>Borç</option>
-          <option value="payment" {% if statement.filters.movement_type == "payment" %}selected{% endif %}>Ödeme</option>
-        </select>
-      </div>
-      <div>
-        <label for="per_page">Sayfa boyutu</label>
-        <select id="per_page" name="per_page">
-          {% for size in (20, 50, 100) %}<option value="{{ size }}" {% if request.args.get('per_page', 20)|int == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
-        </select>
-      </div>
-      <div class="filter-actions">
-        <button type="submit">Filtrele</button>
-        <a class="button secondary" href="{{ url_for('resident.account', apartment_id=selected.id) }}">Temizle</a>
-      </div>
-    </form>
-    <div class="resident-statement">
-      <div class="statement-row statement-head">
-        <span>Tarih</span><span>Açıklama</span><span>Borç</span><span>Ödeme</span><span>Kalan bakiye</span>
-      </div>
-      {% for movement in statement.items %}
-        <div class="statement-row">
-          <span data-label="Tarih">{{ movement.occurred_on.strftime("%d.%m.%Y") }}</span>
-          <span data-label="Açıklama">{{ movement.description }}</span>
-          <span data-label="Borç">{{ format_try(movement.debt_amount) if movement.debt_amount else "—" }}</span>
-          <span data-label="Ödeme">{{ format_try(movement.payment_amount) if movement.payment_amount else "—" }}</span>
-          <strong data-label="Kalan bakiye">{{ format_try(movement.running_balance) }}</strong>
-        </div>
+    <div class="mobile-card-list">
+      {% for item in due_summary %}
+        <article class="detail-card due-summary-card">
+          <div class="card-heading"><h2>{{ "%02d"|format(item.month) }}/{{ item.year }}</h2><span class="badge due-status status-{{ 'paid' if item.status_label == 'Ödendi' else 'partial' if item.status_label == 'Kısmi Ödendi' else 'due' }}">{{ item.status_label }}</span></div>
+          <dl class="compact-values">
+            <div><dt>Tahakkuk eden</dt><dd>{{ format_try(item.charged) }}</dd></div>
+            <div><dt>Yapılan ödeme</dt><dd>{{ format_try(item.paid) }}</dd></div>
+            <div><dt>Kalan borç</dt><dd><strong>{{ format_try(item.remaining) }}</strong></dd></div>
+          </dl>
+          <a class="button secondary" href="{{ url_for('resident.due_month_detail', apartment_id=selected.id, year=item.year, month=item.month) }}">Ay Bazında Detay</a>
+        </article>
       {% else %}
-        <div class="empty-state resident-empty"><span aria-hidden="true">⌕</span><div><strong>Hareket bulunamadı</strong><p>Filtrelerinizi temizleyerek tüm hesap hareketlerinizi görebilirsiniz.</p></div></div>
+        <div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">₺</span><div><h2>Henüz aidat kaydı bulunmuyor</h2><p>Aidat tahakkuklarınız oluştuğunda burada gösterilecektir.</p></div></div>
       {% endfor %}
     </div>
-    {% if statement.pages > 1 %}
-      <nav class="pagination" aria-label="Sayfalar">
-        {% if statement.page > 1 %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page - 1, per_page=request.args.get('per_page', 20), q=statement.filters.query, date_from=statement.filters.date_from.isoformat() if statement.filters.date_from else none, date_to=statement.filters.date_to.isoformat() if statement.filters.date_to else none, type=statement.filters.movement_type) }}">Önceki</a>{% endif %}
-        <span>{{ statement.page }} / {{ statement.pages }}</span>
-        {% if statement.page < statement.pages %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page + 1, per_page=request.args.get('per_page', 20), q=statement.filters.query, date_from=statement.filters.date_from.isoformat() if statement.filters.date_from else none, date_to=statement.filters.date_to.isoformat() if statement.filters.date_to else none, type=statement.filters.movement_type) }}">Sonraki</a>{% endif %}
-      </nav>
-    {% endif %}
+    <details class="detail-card statement-details">
+      <summary>Hesap hareketleri</summary>
+      <p class="muted">Ödemelerin borca kullanılan kısmı bakiyeyi azaltır; kullanılmamış tutar ayrıca gösterilir.</p>
+      <form method="get" class="resident-statement-filters" aria-label="Hesap hareketi filtreleri">
+        <input type="hidden" name="apartment_id" value="{{ selected.id }}">
+        <div><label for="q">Açıklamada ara</label><input id="q" name="q" type="search" value="{{ statement.filters.query }}"></div>
+        <div><label for="date_from">Başlangıç tarihi</label><input id="date_from" name="date_from" type="date" value="{{ statement.filters.date_from.isoformat() if statement.filters.date_from else '' }}"></div>
+        <div><label for="date_to">Bitiş tarihi</label><input id="date_to" name="date_to" type="date" value="{{ statement.filters.date_to.isoformat() if statement.filters.date_to else '' }}"></div>
+        <div><label for="type">Hareket türü</label><select id="type" name="type"><option value="all">Hepsi</option><option value="debt" {% if statement.filters.movement_type == "debt" %}selected{% endif %}>Borç</option><option value="payment" {% if statement.filters.movement_type == "payment" %}selected{% endif %}>Ödeme</option></select></div>
+        <input type="hidden" name="per_page" value="{{ request.args.get('per_page', 20) }}">
+        <button type="submit">Filtrele</button>
+      </form>
+      <div class="resident-statement">
+        {% for movement in statement.items %}<div class="statement-row"><span>{{ movement.occurred_on.strftime("%d.%m.%Y") }}</span><span>{{ movement.description }}</span><span>{{ format_try(movement.debt_amount) if movement.debt_amount else "—" }}</span><span>{{ format_try(movement.payment_amount) if movement.payment_amount else "—" }}</span><strong>{{ format_try(movement.running_balance) }}</strong></div>{% else %}<div class="empty-state">Hareket bulunamadı.</div>{% endfor %}
+      </div>
+      {% if statement.pages > 1 %}<nav class="pagination" aria-label="Hesap hareketi sayfaları">{% if statement.page > 1 %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page-1, per_page=request.args.get('per_page', 20), q=statement.filters.query, date_from=statement.filters.date_from, date_to=statement.filters.date_to, type=statement.filters.movement_type) }}">Önceki</a>{% endif %}<span>{{ statement.page }} / {{ statement.pages }}</span>{% if statement.page < statement.pages %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page+1, per_page=request.args.get('per_page', 20), q=statement.filters.query, date_from=statement.filters.date_from, date_to=statement.filters.date_to, type=statement.filters.movement_type) }}">Sonraki</a>{% endif %}</nav>{% endif %}
+    </details>
   {% endif %}
 </section>
 {% endblock %}
