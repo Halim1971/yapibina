@@ -652,6 +652,8 @@ def test_resident_routes_hide_non_visible_and_cross_tenant(
     assert listing.status_code == 200
     assert b"Resident G\xc3\xb6r\xc3\xbcr" in listing.data
     assert b"Resident G\xc3\xb6remez" not in listing.data
+    assert b'data-view-toggle="announcements"' in listing.data
+    assert b'data-view-list="announcements"' in listing.data
     assert (
         client.get(
             f"/resident/announcements/{visible.id}", headers={"Host": HOST}

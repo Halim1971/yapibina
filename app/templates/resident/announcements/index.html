@@ -12,7 +12,11 @@
     </div>
   </header>
   {% if listing.items %}
-    <div class="announcement-list">
+    <div class="view-toggle" data-view-toggle="announcements" role="group" aria-label="Duyuru görünümü">
+      <button class="view-toggle-button is-active" type="button" data-view-option="cards" aria-pressed="true">Kart görünümü</button>
+      <button class="view-toggle-button" type="button" data-view-option="rows" aria-pressed="false">Satır görünümü</button>
+    </div>
+    <div class="announcement-list view-switchable" data-view-list="announcements" data-view="cards">
       {% for item in listing.items %}
         <article class="detail-card announcement-card {{ 'scheduled' if item.status_label == 'Planlandı' else 'sent' }}">
           <div class="card-heading">

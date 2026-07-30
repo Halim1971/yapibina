@@ -748,6 +748,10 @@ def test_account_filters_are_rendered_and_preserved(client: FlaskClient) -> None
     assert b'value="2026-04-01"' in response.data
     assert b'value="2026-04-30"' in response.data
     assert b"G\xc3\xbcncel bakiye" in response.data
+    assert b'data-view-toggle="dues"' in response.data
+    assert b'data-view-list="dues"' in response.data
+    assert b"Kart g\xc3\xb6r\xc3\xbcn\xc3\xbcm\xc3\xbc" in response.data
+    assert b"Sat\xc4\xb1r g\xc3\xb6r\xc3\xbcn\xc3\xbcm\xc3\xbc" in response.data
 
 
 def test_dashboard_overdue_summary_and_service_query_budget(app: Flask) -> None:

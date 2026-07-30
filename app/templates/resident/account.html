@@ -28,7 +28,13 @@
       <article class="metric-card"><span>Toplam tahakkuk</span><strong>{{ format_try(statement.total_charges) }}</strong></article>
       <article class="metric-card"><span>Toplam ödeme</span><strong>{{ format_try(statement.total_payments) }}</strong></article>
     </div>
-    <div class="mobile-card-list">
+    {% if due_summary %}
+      <div class="view-toggle" data-view-toggle="dues" role="group" aria-label="Aidat ekstresi görünümü">
+        <button class="view-toggle-button is-active" type="button" data-view-option="cards" aria-pressed="true">Kart görünümü</button>
+        <button class="view-toggle-button" type="button" data-view-option="rows" aria-pressed="false">Satır görünümü</button>
+      </div>
+    {% endif %}
+    <div class="mobile-card-list view-switchable" data-view-list="dues" data-view="cards">
       {% for item in due_summary %}
         <article class="detail-card due-summary-card">
           <div class="card-heading"><h2>{{ "%02d"|format(item.month) }}/{{ item.year }}</h2><span class="badge due-status status-{{ 'paid' if item.status_label == 'Ödendi' else 'partial' if item.status_label == 'Kısmi Ödendi' else 'due' }}">{{ item.status_label }}</span></div>
