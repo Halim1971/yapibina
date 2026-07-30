@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import date
 from typing import Any
 
 from flask import abort, g, redirect, render_template, request, url_for
@@ -15,6 +16,7 @@ from app.services.resident_announcements import (
     list_resident_announcements,
 )
 from app.services.resident_finances import (
+    StatementFilters,
     format_try,
     get_resident_account_statement,
     get_resident_dashboard,
@@ -48,6 +50,21 @@ def _page() -> int:
         return 1
 
 
+def _date_arg(name: str) -> date | None:
+    value = request.args.get(name, "").strip()
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _per_page() -> int:
+    value = request.args.get("per_page", 20, type=int)
+    return value if value in {20, 50, 100} else 20
+
+
 @resident_blueprint.get("/resident/")
 @resident_required
 def index() -> Any:
@@ -60,9 +77,18 @@ def index() -> Any:
         )
     except EntityNotFoundError:
         abort(404)
+    announcements = list_resident_announcements(
+        db.session,
+        organization_id=_organization_id(),
+        user_id=current_user.id,
+        page=1,
+        per_page=3,
+        include_read_state=False,
+    )
     return render_template(
         "resident/dashboard.html",
         dashboard=dashboard,
+        recent_announcements=announcements.items,
         format_try=format_try,
     )
 
@@ -84,6 +110,13 @@ def account() -> Any:
                 user_id=current_user.id,
                 apartment_id=selected.id,
                 page=_page(),
+                per_page=_per_page(),
+                filters=StatementFilters(
+                    query=request.args.get("q", ""),
+                    date_from=_date_arg("date_from"),
+                    date_to=_date_arg("date_to"),
+                    movement_type=request.args.get("type", "all"),
+                ),
             )
             if selected
             else None
@@ -139,6 +172,11 @@ def transactions() -> Any:
             "resident.account",
             apartment_id=request.args.get("apartment_id"),
             page=request.args.get("page"),
+            per_page=request.args.get("per_page"),
+            q=request.args.get("q"),
+            date_from=request.args.get("date_from"),
+            date_to=request.args.get("date_to"),
+            type=request.args.get("type"),
         )
     )
 

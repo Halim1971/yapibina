@@ -156,6 +156,18 @@ Resident ekranları salt okunurdur. Hesap ekstresinde teknik ödeme dağıtım
 satırları gösterilmez; ödeme yalnız borçlara uygulanan kısmı kadar running
 balance değerini azaltır. Kullanılmamış ödeme güncel borçtan otomatik düşülmez.
 
+Resident dashboard, seçili dairenin toplam ve gecikmiş açık borcunu, son ödeme
+ve hareket tarihini, son beş finans hareketini, son üç görünür duyuruyu,
+okunmamış bildirim sayısını ve effective branding içindeki yönetim iletişim
+bilgilerini birlikte sunar. Hesap özeti açıklama, tarih aralığı ve borç/ödeme
+türüyle filtrelenebilir; filtreler pagination boyunca korunur.
+
+Finans ekstresi Flask/Jinja’dan bağımsız typed `FinanceStatementViewModel`
+üzerinden sunulur. Bu sözleşme ileride HTML yanında PDF, e-posta veya sürümlü
+API taşıma katmanlarınca yeniden kullanılabilir. Bu aşamada PDF, e-posta,
+JSON API ve banka entegrasyonu uygulanmamıştır; dashboard yalnız mevcut
+Yapıbina hesap özetine bağlantı verir.
+
 ## Kalite kontrolleri
 
 ```bash

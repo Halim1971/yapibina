@@ -6,7 +6,7 @@
 <section class="panel wide resident-page">
   <h1>Ödemelerim</h1>
   {% if not selected %}
-    <div class="empty-state">Henüz hesabınıza bağlı aktif bir daire bulunmuyor.</div>
+    <div class="empty-state resident-empty"><span aria-hidden="true">⌂</span><div><strong>Aktif daire bulunamadı</strong><p>Yönetiminiz daire bağlantınızı tamamladığında ödemeleriniz burada görünecektir.</p></div></div>
   {% else %}
     <p>{{ selected.building_name }} · Daire {{ selected.apartment_label }}</p>
     {% for payment in payment_page.items %}
@@ -16,7 +16,7 @@
         {% if payment.note %}<p>{{ payment.note }}</p>{% endif %}
       </article>
     {% else %}
-      <p class="empty-state">Henüz kayıtlı bir ödemeniz bulunmuyor.</p>
+      <div class="empty-state resident-empty"><span aria-hidden="true">₺</span><div><strong>Henüz kayıtlı bir ödemeniz bulunmuyor.</strong><p>Kaydedilen ödemeleriniz tarih ve yöntem bilgisiyle burada listelenecektir.</p></div></div>
     {% endfor %}
     {% if payment_page.pages > 1 %}
       <nav class="pagination" aria-label="Sayfalar">

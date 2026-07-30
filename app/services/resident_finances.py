@@ -25,7 +25,6 @@ from app.models import (
 )
 from app.models.base import utc_now
 from app.services import EntityNotFoundError, SessionLike
-from app.services.account_balances import get_apartment_balance
 
 ZERO = Decimal("0.00")
 PAYMENT_METHOD_LABELS = {
@@ -67,9 +66,13 @@ class ResidentDashboard:
     apartment: ResidentApartment | None
     apartments: tuple[ResidentApartment, ...]
     current_debt: Decimal
+    overdue_debt: Decimal
+    total_charges: Decimal
     total_payments: Decimal
     unallocated_payment: Decimal
     latest_payment: ResidentPayment | None
+    latest_charge_date: date | None
+    latest_movement_date: date | None
     recent_payments: tuple[ResidentPayment, ...]
     recent_transactions: tuple[ResidentStatementRow, ...]
 
@@ -82,10 +85,28 @@ class PaginatedPayments:
 
 
 @dataclass(frozen=True, slots=True)
-class PaginatedStatement:
+class StatementFilters:
+    query: str = ""
+    date_from: date | None = None
+    date_to: date | None = None
+    movement_type: str = "all"
+
+
+@dataclass(frozen=True, slots=True)
+class FinanceStatementViewModel:
     items: tuple[ResidentStatementRow, ...]
     page: int
     pages: int
+    total_items: int
+    filters: StatementFilters
+    current_balance: Decimal
+    total_charges: Decimal
+    total_payments: Decimal
+    latest_payment_date: date | None
+    latest_charge_date: date | None
+
+
+PaginatedStatement = FinanceStatementViewModel
 
 
 def format_try(value: Decimal) -> str:
@@ -228,6 +249,36 @@ def _payment_allocations(
     }
 
 
+def _charge_allocations(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    apartment_id: uuid.UUID,
+) -> dict[uuid.UUID, Decimal]:
+    rows = session.execute(
+        select(
+            PaymentAllocation.charge_id,
+            func.sum(PaymentAllocation.amount),
+        )
+        .join(Charge, Charge.id == PaymentAllocation.charge_id)
+        .join(Payment, Payment.id == PaymentAllocation.payment_id)
+        .where(
+            PaymentAllocation.organization_id == organization_id,
+            Charge.organization_id == organization_id,
+            Charge.apartment_id == apartment_id,
+            Charge.status == ChargeStatus.POSTED,
+            Payment.organization_id == organization_id,
+            Payment.apartment_id == apartment_id,
+            Payment.status == PaymentStatus.POSTED,
+        )
+        .group_by(PaymentAllocation.charge_id)
+    )
+    return {
+        charge_id: Decimal(amount).quantize(Decimal("0.01"))
+        for charge_id, amount in rows
+    }
+
+
 def _payment_view(payment: Payment) -> ResidentPayment:
     return ResidentPayment(
         payment_date=payment.payment_date,
@@ -260,34 +311,32 @@ def _posted_payments(
     )
 
 
-def _statement(
+def _posted_charges(
     session: SessionLike,
     *,
     organization_id: uuid.UUID,
     apartment_id: uuid.UUID,
-) -> tuple[ResidentStatementRow, ...]:
-    charges = session.scalars(
-        select(Charge)
-        .where(
-            Charge.organization_id == organization_id,
-            Charge.apartment_id == apartment_id,
-            Charge.status == ChargeStatus.POSTED,
+) -> list[Charge]:
+    return list(
+        session.scalars(
+            select(Charge)
+            .where(
+                Charge.organization_id == organization_id,
+                Charge.apartment_id == apartment_id,
+                Charge.status == ChargeStatus.POSTED,
+            )
+            .order_by(Charge.due_date, Charge.created_at, Charge.id)
         )
-        .order_by(Charge.due_date, Charge.created_at, Charge.id)
-    ).all()
-    payments = _posted_payments(
-        session,
-        organization_id=organization_id,
-        apartment_id=apartment_id,
     )
-    allocations = _payment_allocations(
-        session,
-        organization_id=organization_id,
-        apartment_id=apartment_id,
-    )
-    entries: list[
-        tuple[date, datetime, int, str, Decimal, Decimal]
-    ] = [
+
+
+def _statement_from_records(
+    *,
+    charges: list[Charge],
+    payments: list[Payment],
+    allocations: dict[uuid.UUID, Decimal],
+) -> tuple[ResidentStatementRow, ...]:
+    entries: list[tuple[date, datetime, int, str, Decimal, Decimal]] = [
         (
             charge.due_date,
             charge.created_at,
@@ -334,6 +383,34 @@ def _statement(
     return tuple(result)
 
 
+def _statement(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    apartment_id: uuid.UUID,
+) -> tuple[ResidentStatementRow, ...]:
+    charges = _posted_charges(
+        session,
+        organization_id=organization_id,
+        apartment_id=apartment_id,
+    )
+    payments = _posted_payments(
+        session,
+        organization_id=organization_id,
+        apartment_id=apartment_id,
+    )
+    allocations = _payment_allocations(
+        session,
+        organization_id=organization_id,
+        apartment_id=apartment_id,
+    )
+    return _statement_from_records(
+        charges=charges,
+        payments=payments,
+        allocations=allocations,
+    )
+
+
 def get_resident_payments(
     session: SessionLike,
     *,
@@ -374,7 +451,8 @@ def get_resident_account_statement(
     apartment_id: uuid.UUID,
     page: int = 1,
     per_page: int = 20,
-) -> PaginatedStatement:
+    filters: StatementFilters | None = None,
+) -> FinanceStatementViewModel:
     selected, _ = resolve_resident_apartment(
         session,
         organization_id=organization_id,
@@ -383,18 +461,86 @@ def get_resident_account_statement(
     )
     if selected is None:
         raise EntityNotFoundError("Daire bulunamadı.")
-    statement = _statement(
+    active_filters = filters or StatementFilters()
+    charges = _posted_charges(
         session,
         organization_id=organization_id,
         apartment_id=selected.id,
     )
+    payments = _posted_payments(
+        session,
+        organization_id=organization_id,
+        apartment_id=selected.id,
+    )
+    allocations = _payment_allocations(
+        session,
+        organization_id=organization_id,
+        apartment_id=selected.id,
+    )
+    statement = _statement_from_records(
+        charges=charges,
+        payments=payments,
+        allocations=allocations,
+    )
+    query = active_filters.query.strip().casefold()
+    allowed_types = {"all", "debt", "payment"}
+    movement_type = (
+        active_filters.movement_type
+        if active_filters.movement_type in allowed_types
+        else "all"
+    )
+    normalized_filters = StatementFilters(
+        query=active_filters.query.strip(),
+        date_from=active_filters.date_from,
+        date_to=active_filters.date_to,
+        movement_type=movement_type,
+    )
+    filtered = tuple(
+        row
+        for row in statement
+        if (not query or query in row.description.casefold())
+        and (
+            normalized_filters.date_from is None
+            or row.occurred_on >= normalized_filters.date_from
+        )
+        and (
+            normalized_filters.date_to is None
+            or row.occurred_on <= normalized_filters.date_to
+        )
+        and (
+            movement_type == "all"
+            or (movement_type == "debt" and row.debt_amount > ZERO)
+            or (movement_type == "payment" and row.payment_amount > ZERO)
+        )
+    )
     safe_page = max(page, 1)
-    pages = max(math.ceil(len(statement) / per_page), 1)
-    start = (safe_page - 1) * per_page
-    return PaginatedStatement(
-        items=statement[start : start + per_page],
+    safe_per_page = per_page if per_page in {20, 50, 100} else 20
+    pages = max(math.ceil(len(filtered) / safe_per_page), 1)
+    safe_page = min(safe_page, pages)
+    start = (safe_page - 1) * safe_per_page
+    return FinanceStatementViewModel(
+        items=filtered[start : start + safe_per_page],
         page=safe_page,
         pages=pages,
+        total_items=len(filtered),
+        filters=normalized_filters,
+        current_balance=statement[-1].running_balance if statement else ZERO,
+        total_charges=sum(
+            (charge.original_amount for charge in charges),
+            start=ZERO,
+        ).quantize(Decimal("0.01")),
+        total_payments=sum(
+            (payment.amount for payment in payments),
+            start=ZERO,
+        ).quantize(Decimal("0.01")),
+        latest_payment_date=max(
+            (payment.payment_date for payment in payments),
+            default=None,
+        ),
+        latest_charge_date=max(
+            (charge.due_date for charge in charges),
+            default=None,
+        ),
     )
 
 
@@ -416,59 +562,93 @@ def get_resident_dashboard(
             apartment=None,
             apartments=apartments,
             current_debt=ZERO,
+            overdue_debt=ZERO,
+            total_charges=ZERO,
             total_payments=ZERO,
             unallocated_payment=ZERO,
             latest_payment=None,
+            latest_charge_date=None,
+            latest_movement_date=None,
             recent_payments=(),
             recent_transactions=(),
         )
-    balance = get_apartment_balance(
-        session,
-        organization_id=organization_id,
-        building_id=_building_id(session, organization_id, selected.id),
-        apartment_id=selected.id,
-    )
     payments = _posted_payments(
         session,
         organization_id=organization_id,
         apartment_id=selected.id,
     )
-    statement = _statement(
+    charges = _posted_charges(
         session,
         organization_id=organization_id,
         apartment_id=selected.id,
     )
-    unallocated = max(
-        (balance.total_payments - balance.total_allocated).quantize(
-            Decimal("0.01")
+    allocations_by_payment = _payment_allocations(
+        session,
+        organization_id=organization_id,
+        apartment_id=selected.id,
+    )
+    statement = _statement_from_records(
+        charges=charges,
+        payments=payments,
+        allocations=allocations_by_payment,
+    )
+    allocations_by_charge = _charge_allocations(
+        session,
+        organization_id=organization_id,
+        apartment_id=selected.id,
+    )
+    today = utc_now().date()
+    overdue = sum(
+        (
+            max(
+                (
+                    charge.original_amount
+                    - allocations_by_charge.get(charge.id, ZERO)
+                ).quantize(Decimal("0.01")),
+                ZERO,
+            )
+            for charge in charges
+            if charge.due_date < today
         ),
+        start=ZERO,
+    ).quantize(Decimal("0.01"))
+    total_charges = sum(
+        (charge.original_amount for charge in charges),
+        start=ZERO,
+    ).quantize(Decimal("0.01"))
+    total_payments = sum(
+        (payment.amount for payment in payments),
+        start=ZERO,
+    ).quantize(Decimal("0.01"))
+    total_allocated = sum(
+        allocations_by_payment.values(),
+        start=ZERO,
+    ).quantize(Decimal("0.01"))
+    current_debt = max(
+        (total_charges - total_allocated).quantize(Decimal("0.01")),
+        ZERO,
+    )
+    unallocated = max(
+        (total_payments - total_allocated).quantize(Decimal("0.01")),
         ZERO,
     )
     payment_views = tuple(_payment_view(item) for item in payments[:5])
     return ResidentDashboard(
         apartment=selected,
         apartments=apartments,
-        current_debt=max(balance.total_outstanding, ZERO),
-        total_payments=balance.total_payments,
+        current_debt=current_debt,
+        overdue_debt=overdue,
+        total_charges=total_charges,
+        total_payments=total_payments,
         unallocated_payment=unallocated,
         latest_payment=payment_views[0] if payment_views else None,
+        latest_charge_date=max(
+            (charge.due_date for charge in charges),
+            default=None,
+        ),
+        latest_movement_date=(
+            max(row.occurred_on for row in statement) if statement else None
+        ),
         recent_payments=payment_views,
         recent_transactions=statement[-5:],
     )
-
-
-def _building_id(
-    session: SessionLike,
-    organization_id: uuid.UUID,
-    apartment_id: uuid.UUID,
-) -> uuid.UUID:
-    building_id = session.scalar(
-        select(Apartment.building_id).where(
-            Apartment.organization_id == organization_id,
-            Apartment.id == apartment_id,
-            Apartment.is_active.is_(True),
-        )
-    )
-    if building_id is None:
-        raise EntityNotFoundError("Daire bulunamadı.")
-    return building_id

@@ -64,3 +64,7 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
   görüntülemede ve manuel POST işleminde idempotent okundu işaretleme
 - Görünür duyurulardan türetilen resident bildirim merkezi, okunmamış navbar
   rozeti ve kimlik göstermeyen organization aggregate okunma metrikleri
+- Resident dashboard için gecikmiş borç, son hareket, son duyurular ve yönetim
+  iletişim özeti; finans ekstresinde açıklama/tarih/tür filtreleri
+- HTML/PDF/e-posta/gelecekteki API taşıma katmanlarından bağımsız typed
+  `FinanceStatementViewModel` ve resident finans query-count regresyonları

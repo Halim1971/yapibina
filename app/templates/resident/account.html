@@ -20,6 +20,47 @@
       </form>
     {% endif %}
     <p>{{ selected.building_name }} · Daire {{ selected.apartment_label }}</p>
+    <div class="resident-summary finance-summary">
+      <article><span>Güncel bakiye</span><strong>{{ format_try(statement.current_balance) }}</strong></article>
+      <article><span>Toplam borç</span><strong>{{ format_try(statement.total_charges) }}</strong></article>
+      <article><span>Toplam ödeme</span><strong>{{ format_try(statement.total_payments) }}</strong><small>Kaydedilmiş geçerli ödemeler</small></article>
+      <article><span>Son ödeme</span><strong>{{ statement.latest_payment_date.strftime("%d.%m.%Y") if statement.latest_payment_date else "—" }}</strong></article>
+      <article><span>Son tahakkuk</span><strong>{{ statement.latest_charge_date.strftime("%d.%m.%Y") if statement.latest_charge_date else "—" }}</strong></article>
+    </div>
+
+    <form method="get" class="resident-statement-filters" aria-label="Hesap hareketi filtreleri">
+      <input type="hidden" name="apartment_id" value="{{ selected.id }}">
+      <div>
+        <label for="q">Açıklamada ara</label>
+        <input id="q" name="q" type="search" value="{{ statement.filters.query }}" placeholder="Aidat veya ödeme açıklaması">
+      </div>
+      <div>
+        <label for="date_from">Başlangıç tarihi</label>
+        <input id="date_from" name="date_from" type="date" value="{{ statement.filters.date_from.isoformat() if statement.filters.date_from else '' }}">
+      </div>
+      <div>
+        <label for="date_to">Bitiş tarihi</label>
+        <input id="date_to" name="date_to" type="date" value="{{ statement.filters.date_to.isoformat() if statement.filters.date_to else '' }}">
+      </div>
+      <div>
+        <label for="type">Hareket türü</label>
+        <select id="type" name="type">
+          <option value="all" {% if statement.filters.movement_type == "all" %}selected{% endif %}>Hepsi</option>
+          <option value="debt" {% if statement.filters.movement_type == "debt" %}selected{% endif %}>Borç</option>
+          <option value="payment" {% if statement.filters.movement_type == "payment" %}selected{% endif %}>Ödeme</option>
+        </select>
+      </div>
+      <div>
+        <label for="per_page">Sayfa boyutu</label>
+        <select id="per_page" name="per_page">
+          {% for size in (20, 50, 100) %}<option value="{{ size }}" {% if request.args.get('per_page', 20)|int == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button type="submit">Filtrele</button>
+        <a class="button secondary" href="{{ url_for('resident.account', apartment_id=selected.id) }}">Temizle</a>
+      </div>
+    </form>
     <div class="resident-statement">
       <div class="statement-row statement-head">
         <span>Tarih</span><span>Açıklama</span><span>Borç</span><span>Ödeme</span><span>Kalan bakiye</span>
@@ -33,14 +74,14 @@
           <strong data-label="Kalan bakiye">{{ format_try(movement.running_balance) }}</strong>
         </div>
       {% else %}
-        <p class="empty-state">Henüz hesap hareketiniz bulunmuyor.</p>
+        <div class="empty-state resident-empty"><span aria-hidden="true">⌕</span><div><strong>Hareket bulunamadı</strong><p>Filtrelerinizi temizleyerek tüm hesap hareketlerinizi görebilirsiniz.</p></div></div>
       {% endfor %}
     </div>
     {% if statement.pages > 1 %}
       <nav class="pagination" aria-label="Sayfalar">
-        {% if statement.page > 1 %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page - 1) }}">Önceki</a>{% endif %}
+        {% if statement.page > 1 %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page - 1, per_page=request.args.get('per_page', 20), q=statement.filters.query, date_from=statement.filters.date_from.isoformat() if statement.filters.date_from else none, date_to=statement.filters.date_to.isoformat() if statement.filters.date_to else none, type=statement.filters.movement_type) }}">Önceki</a>{% endif %}
         <span>{{ statement.page }} / {{ statement.pages }}</span>
-        {% if statement.page < statement.pages %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page + 1) }}">Sonraki</a>{% endif %}
+        {% if statement.page < statement.pages %}<a href="{{ url_for('resident.account', apartment_id=selected.id, page=statement.page + 1, per_page=request.args.get('per_page', 20), q=statement.filters.query, date_from=statement.filters.date_from.isoformat() if statement.filters.date_from else none, date_to=statement.filters.date_to.isoformat() if statement.filters.date_to else none, type=statement.filters.movement_type) }}">Sonraki</a>{% endif %}
       </nav>
     {% endif %}
   {% endif %}

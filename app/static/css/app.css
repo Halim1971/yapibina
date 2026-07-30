@@ -609,7 +609,9 @@ td {
 
 .resident-summary article {
   display: grid;
+  grid-template-rows: auto 1fr auto;
   gap: 0.45rem;
+  min-height: 8.5rem;
   padding: 1.1rem;
   border: 1px solid var(--color-secondary);
   border-radius: 0.75rem;
@@ -631,6 +633,83 @@ td {
 
 .resident-summary .unused-payment {
   border-left: 0.35rem solid #5b7f91;
+}
+
+.resident-summary .overdue-card {
+  border-left: 0.35rem solid #a97642;
+}
+
+.finance-summary {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.resident-dashboard-actions,
+.resident-support-links,
+.filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.resident-dashboard-actions {
+  margin: 0 0 1.5rem;
+}
+
+.resident-dashboard-grid > section,
+.resident-support {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid var(--color-secondary);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+}
+
+.resident-support {
+  margin-top: 1.5rem;
+}
+
+.resident-support h2 {
+  margin-top: 0;
+}
+
+.resident-statement-filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 2fr) repeat(4, minmax(9rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+  margin: 1.25rem 0;
+}
+
+.resident-statement-filters > div {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.resident-statement-filters .filter-actions {
+  display: flex;
+}
+
+.resident-empty {
+  display: flex;
+  gap: 0.8rem;
+  align-items: flex-start;
+}
+
+.resident-empty > span {
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.resident-empty p {
+  margin: 0.25rem 0 0;
+}
+
+.resident-page :is(a, button, input, select):focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--color-primary) 55%, white);
+  outline-offset: 2px;
 }
 
 .resident-apartment-picker {
@@ -699,6 +778,11 @@ td {
     grid-template-columns: 1fr;
   }
 
+  .finance-summary,
+  .resident-statement-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .resident-apartment-picker {
     display: grid;
   }
@@ -722,5 +806,23 @@ td {
     color: #526767;
     font-size: 0.8rem;
     font-weight: 400;
+  }
+}
+
+@media (max-width: 27rem) {
+  .finance-summary,
+  .resident-statement-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .resident-list-row {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+
+  .resident-dashboard-actions .button,
+  .filter-actions > * {
+    width: 100%;
+    text-align: center;
   }
 }

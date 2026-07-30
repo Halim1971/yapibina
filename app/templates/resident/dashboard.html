@@ -33,9 +33,9 @@
       </form>
     {% endif %}
 
-    <div class="resident-summary">
+    <div class="resident-summary resident-summary-primary">
       <article class="debt-card {% if dashboard.current_debt == 0 %}debt-clear{% endif %}">
-        <span>Borcum</span>
+        <span>Toplam borç</span>
         {% if dashboard.current_debt > 0 %}
           <strong>{{ format_try(dashboard.current_debt) }}</strong>
           <small>Kalan borç</small>
@@ -44,14 +44,20 @@
           <small>Borcunuz bulunmuyor.</small>
         {% endif %}
       </article>
+      <article class="overdue-card">
+        <span>Gecikmiş borç</span>
+        <strong>{{ format_try(dashboard.overdue_debt) }}</strong>
+        <small>{% if dashboard.overdue_debt > 0 %}Vadesi geçmiş açık tahakkuklar{% else %}Gecikmiş borcunuz bulunmuyor{% endif %}</small>
+      </article>
       <article>
         <span>Son ödeme</span>
         <strong>{{ format_try(dashboard.latest_payment.amount) if dashboard.latest_payment else "—" }}</strong>
         <small>{{ dashboard.latest_payment.payment_date.strftime("%d.%m.%Y") if dashboard.latest_payment else "Henüz ödeme yok" }}</small>
       </article>
       <article>
-        <span>Toplam ödeme</span>
-        <strong>{{ format_try(dashboard.total_payments) }}</strong>
+        <span>Son hareket</span>
+        <strong>{{ dashboard.latest_movement_date.strftime("%d.%m.%Y") if dashboard.latest_movement_date else "—" }}</strong>
+        <small>{% if dashboard.latest_movement_date %}En son finansal hareket tarihi{% else %}Henüz hareket yok{% endif %}</small>
       </article>
       {% if dashboard.unallocated_payment > 0 %}
         <article class="unused-payment">
@@ -62,26 +68,17 @@
       {% endif %}
     </div>
 
-    <div class="resident-sections">
-      <section>
-        <div class="section-header">
-          <h2>Ödemelerim</h2>
-          <a href="{{ url_for('resident.payments', apartment_id=dashboard.apartment.id) }}">Tümünü gör</a>
-        </div>
-        {% for payment in dashboard.recent_payments %}
-          <div class="resident-list-row">
-            <span>{{ payment.payment_date.strftime("%d.%m.%Y") }}</span>
-            <span>{{ payment.method_label }}</span>
-            <strong>{{ format_try(payment.amount) }}</strong>
-          </div>
-        {% else %}
-          <p class="empty-state">Henüz kayıtlı bir ödemeniz bulunmuyor.</p>
-        {% endfor %}
-      </section>
+    <div class="resident-dashboard-actions" aria-label="Hızlı işlemler">
+      <a class="button secondary" href="{{ url_for('resident.account', apartment_id=dashboard.apartment.id) }}">Hesap özetini görüntüle</a>
+      <a class="button secondary" href="{{ url_for('resident.notifications') }}">
+        Bildirimler{% if unread_announcement_count %} ({{ unread_announcement_count }}){% endif %}
+      </a>
+    </div>
 
+    <div class="resident-sections resident-dashboard-grid">
       <section>
         <div class="section-header">
-          <h2>Hesap hareketlerim</h2>
+          <h2>Son hareketler</h2>
           <a href="{{ url_for('resident.account', apartment_id=dashboard.apartment.id) }}">Tümünü gör</a>
         </div>
         {% for movement in dashboard.recent_transactions %}
@@ -91,10 +88,39 @@
             <strong>{{ format_try(movement.running_balance) }}</strong>
           </div>
         {% else %}
-          <p class="empty-state">Henüz hesap hareketiniz bulunmuyor.</p>
+          <div class="empty-state resident-empty"><span aria-hidden="true">○</span><div><strong>Henüz hareket yok</strong><p>Tahakkuk ve ödeme hareketleriniz burada görünecektir.</p></div></div>
+        {% endfor %}
+      </section>
+
+      <section>
+        <div class="section-header">
+          <h2>Son duyurular</h2>
+          <a href="{{ url_for('resident.announcements') }}">Tümünü gör</a>
+        </div>
+        {% for announcement in recent_announcements %}
+          <div class="resident-list-row">
+            <span>{{ announcement.published_at|datetime_tr }}</span>
+            <a href="{{ url_for('resident.announcement_detail', announcement_id=announcement.id) }}">{{ announcement.title }}</a>
+            <span class="badge">Duyuru</span>
+          </div>
+        {% else %}
+          <div class="empty-state resident-empty"><span aria-hidden="true">◇</span><div><strong>Henüz duyuru yok</strong><p>Yönetimin yayınladığı duyurular burada görünecektir.</p></div></div>
         {% endfor %}
       </section>
     </div>
+
+    <section class="resident-support" aria-labelledby="resident-support-title">
+      <h2 id="resident-support-title">Yönetim iletişim bilgileri</h2>
+      {% if branding.support_email or branding.support_phone or branding.website_url %}
+        <div class="resident-support-links">
+          {% if branding.support_email %}<a href="mailto:{{ branding.support_email }}">{{ branding.support_email }}</a>{% endif %}
+          {% if branding.support_phone %}<a href="tel:{{ branding.support_phone }}">{{ branding.support_phone }}</a>{% endif %}
+          {% if branding.website_url %}<a href="{{ branding.website_url }}" rel="noopener noreferrer">Web sitesi</a>{% endif %}
+        </div>
+      {% else %}
+        <p class="empty-state">Yönetim iletişim bilgileri henüz paylaşılmadı.</p>
+      {% endif %}
+    </section>
   {% endif %}
 </section>
 {% endblock %}

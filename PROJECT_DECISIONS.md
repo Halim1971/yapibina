@@ -838,6 +838,20 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
   servisleri Flask/Jinja’dan bağımsızdır; gelecekteki mobil taşıma katmanı aynı
   servisleri kullanabilir.
 
+## D-077 — Resident hesap ekstresi taşıma katmanından bağımsızdır
+
+- **Karar:** Resident hesap özeti, filtreler, özet finans değerleri ve
+  sayfalanmış hareketler `FinanceStatementViewModel` typed read-model’inde
+  üretilir. Route yalnız tenant kapsamını ve query parametrelerini servise
+  aktarır; template finans veya running-balance hesabı yapmaz.
+- **Semantik:** Charge borcu artırır, yalnız geçerli allocation uygulanmış
+  ödemeyi azaltır. Tahsis edilmemiş payment açık borcu veya running balance’ı
+  azaltmaz. Gecikmiş borç, vadesi geçmiş posted charge’ın geçerli
+  allocation’dan sonra kalan tutarıdır.
+- **İstemci bağımsızlığı:** Aynı read-model ileride HTML, PDF, e-posta veya
+  `/api/v1` presentation katmanlarınca kullanılabilir. Bu karar PDF, e-posta,
+  banka entegrasyonu veya JSON API uygulamaz.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:

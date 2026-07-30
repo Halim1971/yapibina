@@ -5,7 +5,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
-from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy import and_, exists, false, func, or_, select
 from sqlalchemy.sql.elements import ColumnElement
 
 from app.models import (
@@ -141,6 +141,7 @@ def list_resident_announcements(
     page: int = 1,
     per_page: int = 20,
     now: datetime | None = None,
+    include_read_state: bool = True,
 ) -> ResidentAnnouncementPage:
     reference = as_utc(now or utc_now())
     page = max(page, 1)
@@ -154,16 +155,20 @@ def list_resident_announcements(
     total = int(count_value)
     pages = math.ceil(total / per_page) if total else 0
     page = min(page, pages) if pages else 1
-    rows = session.execute(
-        select(
-            Announcement.id,
-            Announcement.title,
-            Announcement.body,
-            Announcement.published_at,
-            Announcement.expires_at,
-            AnnouncementRead.id.label("read_id"),
-        )
-        .outerjoin(
+    listing = select(
+        Announcement.id,
+        Announcement.title,
+        Announcement.body,
+        Announcement.published_at,
+        Announcement.expires_at,
+        (
+            AnnouncementRead.id.is_not(None)
+            if include_read_state
+            else false()
+        ).label("is_read"),
+    )
+    if include_read_state:
+        listing = listing.outerjoin(
             AnnouncementRead,
             and_(
                 AnnouncementRead.organization_id == organization_id,
@@ -171,6 +176,8 @@ def list_resident_announcements(
                 AnnouncementRead.user_id == user_id,
             ),
         )
+    rows = session.execute(
+        listing
         .where(*conditions)
         .order_by(Announcement.published_at.desc(), Announcement.id.asc())
         .offset((page - 1) * per_page)
@@ -184,7 +191,7 @@ def list_resident_announcements(
                 body_preview=(row.body if len(row.body) <= 180 else f"{row.body[:177]}..."),
                 published_at=as_utc(row.published_at),
                 expires_at=as_utc(row.expires_at) if row.expires_at else None,
-                is_read=row.read_id is not None,
+                is_read=bool(row.is_read),
             )
             for row in rows
         ),

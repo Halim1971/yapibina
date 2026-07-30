@@ -6,6 +6,7 @@ from decimal import Decimal
 import pytest
 from flask import Flask
 from flask.testing import FlaskClient
+from sqlalchemy import event
 
 from app.extensions import db
 from app.models import (
@@ -38,6 +39,7 @@ from app.services.payments import (
     record_payment,
 )
 from app.services.resident_finances import (
+    StatementFilters,
     get_resident_account_statement,
     get_resident_dashboard,
     list_resident_apartments,
@@ -654,3 +656,146 @@ def test_service_requires_organization_membership() -> None:
             organization_id=organization.id,
             user_id=user.id,
         )
+
+
+def test_statement_filters_and_transport_independent_summary() -> None:
+    organization, resident, building, apartment = _seed_resident()
+    _charge(
+        organization,
+        building,
+        apartment,
+        resident,
+        "400.00",
+        title="Ocak aidatı",
+        due_date=date(2026, 1, 15),
+    )
+    payment = _payment(
+        organization,
+        building,
+        apartment,
+        resident,
+        "150.00",
+        payment_date=date(2026, 1, 20),
+    )
+    auto_allocate_payment(
+        db.session,
+        organization_id=organization.id,
+        payment_id=payment.id,
+    )
+    db.session.commit()
+
+    statement = get_resident_account_statement(
+        db.session,
+        organization_id=organization.id,
+        user_id=resident.id,
+        apartment_id=apartment.id,
+        filters=StatementFilters(
+            query="ödeme",
+            date_from=date(2026, 1, 16),
+            date_to=date(2026, 1, 31),
+            movement_type="payment",
+        ),
+    )
+
+    assert len(statement.items) == 1
+    assert statement.items[0].payment_amount == Decimal("150.00")
+    assert statement.current_balance == Decimal("250.00")
+    assert statement.total_charges == Decimal("400.00")
+    assert statement.total_payments == Decimal("150.00")
+    assert statement.latest_charge_date == date(2026, 1, 15)
+    assert statement.latest_payment_date == date(2026, 1, 20)
+
+
+def test_account_filters_are_rendered_and_preserved(client: FlaskClient) -> None:
+    organization, resident, building, apartment = _seed_resident()
+    _charge(
+        organization,
+        building,
+        apartment,
+        resident,
+        "100.00",
+        title="Özel açıklamalı aidat",
+        due_date=date(2026, 4, 15),
+    )
+    db.session.commit()
+    _login(client, resident.email)
+
+    response = client.get(
+        "/resident/account"
+        "?q=%C3%96zel&date_from=2026-04-01&date_to=2026-04-30"
+        "&type=debt&per_page=50",
+        headers={"Host": HOST},
+    )
+
+    assert response.status_code == 200
+    assert "Özel açıklamalı aidat".encode() in response.data
+    assert b'value="2026-04-01"' in response.data
+    assert b'value="2026-04-30"' in response.data
+    assert b"G\xc3\xbcncel bakiye" in response.data
+
+
+def test_dashboard_overdue_summary_and_service_query_budget(app: Flask) -> None:
+    organization, resident, building, apartment = _seed_resident()
+    _charge(
+        organization,
+        building,
+        apartment,
+        resident,
+        "275.00",
+        due_date=date(2026, 1, 15),
+    )
+    db.session.commit()
+    statements = 0
+
+    def count_query(*_: object) -> None:
+        nonlocal statements
+        statements += 1
+
+    event.listen(db.engine, "before_cursor_execute", count_query)
+    try:
+        dashboard = get_resident_dashboard(
+            db.session,
+            organization_id=organization.id,
+            user_id=resident.id,
+            apartment_id=apartment.id,
+        )
+    finally:
+        event.remove(db.engine, "before_cursor_execute", count_query)
+
+    assert dashboard.overdue_debt == Decimal("275.00")
+    assert dashboard.latest_charge_date == date(2026, 1, 15)
+    assert statements <= 10
+
+
+def test_finance_statement_query_budget_does_not_grow_with_rows(app: Flask) -> None:
+    organization, resident, building, apartment = _seed_resident()
+    for index in range(25):
+        _charge(
+            organization,
+            building,
+            apartment,
+            resident,
+            "10.00",
+            title=f"Hareket {index}",
+            due_date=date(2026, 1, 1) + timedelta(days=index),
+        )
+    db.session.commit()
+    statements = 0
+
+    def count_query(*_: object) -> None:
+        nonlocal statements
+        statements += 1
+
+    event.listen(db.engine, "before_cursor_execute", count_query)
+    try:
+        result = get_resident_account_statement(
+            db.session,
+            organization_id=organization.id,
+            user_id=resident.id,
+            apartment_id=apartment.id,
+        )
+    finally:
+        event.remove(db.engine, "before_cursor_execute", count_query)
+
+    assert result.total_items == 25
+    assert statements <= 8
