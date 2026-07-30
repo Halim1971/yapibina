@@ -163,7 +163,7 @@ def allocate_payment(
         or payment.building_id != charge.building_id
     ):
         raise CrossTenantFinancialOperationError(
-            "Ödeme ve borç aynı daireye ait olmalıdır."
+            "Ödeme ve borç aynı bağımsız bölüme ait olmalıdır."
         )
     allocation_amount = money(amount)
     if allocation_amount > get_payment_unallocated_amount(

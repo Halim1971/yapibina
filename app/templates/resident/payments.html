@@ -6,9 +6,9 @@
 <section class="panel wide resident-page">
   <h1>Ödemelerim</h1>
   {% if not selected %}
-    <div class="empty-state resident-empty"><span aria-hidden="true">⌂</span><div><strong>Aktif daire bulunamadı</strong><p>Yönetiminiz daire bağlantınızı tamamladığında ödemeleriniz burada görünecektir.</p></div></div>
+    <div class="empty-state resident-empty"><span aria-hidden="true">⌂</span><div><strong>Aktif bağımsız bölüm bulunamadı</strong><p>Yönetiminiz bağımsız bölüm bağlantınızı tamamladığında ödemeleriniz burada görünecektir.</p></div></div>
   {% else %}
-    <p>{{ selected.building_name }} · Daire {{ selected.apartment_label }}</p>
+    <p>{{ selected.building_name }} · Bağımsız Bölüm {{ selected.apartment_label }}</p>
     {% for payment in payment_page.items %}
       <article class="payment-card">
         <div><strong>{{ format_try(payment.amount) }}</strong><span>{{ payment.method_label }}</span></div>

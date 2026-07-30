@@ -7,7 +7,7 @@
   <div><p class="eyebrow">İletişim</p><h1>Duyurular</h1><p>{{ listing.total }} kayıt</p></div>
   <a class="button" href="{{ url_for('organization.announcement_new') }}">Yeni Duyuru</a>
 </section>
-<form class="filter-bar" method="get">
+<form class="filter-bar announcement-filters" method="get">
   <label>Arama<input name="q" value="{{ listing.search }}" placeholder="Başlık veya metin"></label>
   <label>Durum<select name="status">
     <option value="">Tümü</option>
@@ -26,8 +26,8 @@
     <option value="title" {% if listing.sort == "title" %}selected{% endif %}>Başlık</option>
     <option value="status" {% if listing.sort == "status" %}selected{% endif %}>Durum</option>
   </select></label>
-  <select name="direction" aria-label="Sıralama yönü"><option value="desc" {% if listing.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if listing.direction == "asc" %}selected{% endif %}>Artan</option></select>
-  <select name="per_page" aria-label="Sayfa boyutu">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if listing.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select>
+  <label>Yön<select name="direction"><option value="desc" {% if listing.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if listing.direction == "asc" %}selected{% endif %}>Artan</option></select></label>
+  <label>Sayfa boyutu<select name="per_page">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if listing.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></label>
   <button type="submit">Uygula</button>
 </form>
 {% if listing.items %}

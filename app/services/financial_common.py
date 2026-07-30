@@ -34,7 +34,7 @@ def require_financial_scope(
     building = session.get(Building, building_id)
     apartment = session.get(Apartment, apartment_id)
     if building is None or apartment is None:
-        raise EntityNotFoundError("Bina veya daire bulunamadı.")
+        raise EntityNotFoundError("Bina veya bağımsız bölüm bulunamadı.")
     if (
         building.organization_id != organization_id
         or apartment.organization_id != organization_id

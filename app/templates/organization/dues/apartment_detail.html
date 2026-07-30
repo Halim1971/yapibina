@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 {% from "components/nav.html" import organization_nav with context %}
-{% block title %}Daire detayı{% endblock %}
+{% block title %}Bağımsız bölüm detayı{% endblock %}
 {% block navigation %}{{ organization_nav() }}{% endblock %}
 {% block content %}
 <section class="panel wide dues-page">
   <header class="section-header">
     <div>
-      <h1>Daire detayı: {{ detail.apartment.unit_code or detail.apartment.number }}</h1>
+      <h1>Bağımsız bölüm detayı: {{ detail.apartment.unit_code or detail.apartment.number }}</h1>
       <a href="{{ url_for('organization.dues', building_id=detail.apartment.building_id) }}">Aidat ekranına dön</a>
     </div>
   </header>

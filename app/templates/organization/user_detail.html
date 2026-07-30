@@ -33,7 +33,7 @@
   </form>
 </section>
 <section class="panel">
-  <h2>Daire üyeliği</h2>
+  <h2>Bağımsız bölüm üyeliği</h2>
   <form method="post" action="{{ url_for('organization.apartment_membership', user_id=user.id) }}">
     {{ apartment_form.hidden_tag() }}
     {% for field in apartment_form if field.name != "csrf_token" %}

@@ -215,7 +215,7 @@ def _identity(
         )
     ).one_or_none()
     if row is None:
-        raise ServiceValidationError("Daire bulunamadı.")
+        raise ServiceValidationError("Bağımsız bölüm bulunamadı.")
     apartment, building = row
     return ApartmentIdentity(
         id=apartment.id,

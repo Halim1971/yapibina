@@ -7,77 +7,15 @@
   <header class="section-header">
     <div>
       <h1>Genel Bakış</h1>
-      <p class="muted">{{ dashboard.period_label }} dönemi ve güncel organization verileri</p>
+      <p class="muted">Yönetim işlemlerine hızlıca ulaşın.</p>
     </div>
   </header>
 
-  {% if dashboard.latest_import_failed %}
-    <p class="alert field-error">Son veri içe aktarma işlemi başarısız oldu. Hiçbir kısmi veri kaydedilmedi; ayrıntıları Veri İçe Aktarma ekranından inceleyebilirsiniz.</p>
-  {% endif %}
-
-  <div class="dashboard-grid">
-    <article><span>Toplam bina</span><strong>{{ dashboard.building_count }}</strong></article>
-    <article><span>Toplam daire</span><strong>{{ dashboard.apartment_count }}</strong></article>
-    <article><span>Aktif resident</span><strong>{{ dashboard.active_resident_count }}</strong></article>
-    <article><span>Toplam açık borç</span><strong>{{ "%.2f"|format(dashboard.outstanding_debt) }} ₺</strong></article>
-    <article><span>Bu ay tahsil edilen</span><strong>{{ "%.2f"|format(dashboard.current_month_payments) }} ₺</strong></article>
-    <article><span>Bu ay tahakkuk eden</span><strong>{{ "%.2f"|format(dashboard.current_month_charges) }} ₺</strong></article>
-    <article><span>Bu ay tahsilat oranı</span><strong>{% if dashboard.collection_rate is not none %}%{{ "%.2f"|format(dashboard.collection_rate) }}{% else %}—{% endif %}</strong></article>
-    <article>
-      <span>Son başarılı veri aktarımı</span>
-      {% if dashboard.successful_import %}
-        <strong>{{ dashboard.successful_import.finished_at.strftime("%d.%m.%Y %H:%M") }}</strong>
-        <small>{{ dashboard.successful_import.inserted }} yeni · {{ dashboard.successful_import.updated }} güncel · {{ dashboard.successful_import.skipped }} değişmedi · {{ dashboard.successful_import.deferred }} ertelendi</small>
-      {% else %}
-        <strong>Henüz veri içe aktarılmadı</strong>
-        <a href="{{ url_for('organization.import_new') }}">Veri İçe Aktarma</a>
-      {% endif %}
-    </article>
+  <div class="overview-actions" aria-label="Yönetim bölümleri">
+    <a href="{{ url_for('organization.buildings') }}"><strong>Binalar</strong><span>Binaları, bağımsız bölümleri ve ikamet edenleri görüntüleyin.</span></a>
+    <a href="{{ url_for('organization.dues') }}"><strong>Aidat ve Ödemeler</strong><span>Tahakkuk ve ödeme kayıtlarını inceleyin.</span></a>
+    <a href="{{ url_for('organization.imports') }}"><strong>Veri İçe Aktarma</strong><span>Canonical veri paketlerini yönetin.</span></a>
+    <a href="{{ url_for('organization.announcements') }}"><strong>Duyurular</strong><span>Organization ve bina duyurularını yönetin.</span></a>
   </div>
-
-  <section class="dashboard-section">
-    <header class="section-header"><h2>Bina özeti</h2><a href="{{ url_for('organization.buildings') }}">Tüm binaları görüntüle</a></header>
-    {% if dashboard.buildings %}
-      <div class="table-scroll">
-        <table>
-          <thead><tr><th>Bina</th><th>Daire</th><th>Aktif resident</th><th>Açık borç</th><th>Bu ay tahsilat</th></tr></thead>
-          <tbody>
-          {% for building in dashboard.buildings %}
-            <tr>
-              <td><a href="{{ url_for('organization.building_detail', building_id=building.id) }}">{{ building.name }}</a></td>
-              <td>{{ building.apartment_count }}</td>
-              <td>{{ building.active_resident_count }}</td>
-              <td>{{ "%.2f"|format(building.outstanding_debt) }} ₺</td>
-              <td>{{ "%.2f"|format(building.current_month_payments) }} ₺</td>
-            </tr>
-          {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% if dashboard.apartment_count == 0 %}<p class="empty-state">Binalarınıza henüz daire eklenmedi.</p>{% endif %}
-    {% else %}
-      <p class="empty-state">Henüz bina bulunmuyor. Binalar ekranından ilk binanızı oluşturabilirsiniz.</p>
-    {% endif %}
-  </section>
-
-  <section class="dashboard-section">
-    <h2>Son finansal hareketler</h2>
-    {% if dashboard.movements %}
-      <div class="movement-list dashboard-movements">
-        <div class="movement-row movement-head"><span>Tarih</span><span>Açıklama</span><span>Bina / daire</span><span>Tür</span><span>Tutar</span></div>
-        {% for movement in dashboard.movements %}
-          <div class="movement-row">
-            <span data-label="Tarih">{{ movement.movement_date.strftime("%d.%m.%Y") }}</span>
-            <span data-label="Açıklama">{{ movement.description }}</span>
-            <span data-label="Bina / daire">{{ movement.building_name }} / {{ movement.apartment_label }}</span>
-            <span data-label="Tür" class="badge">{{ movement.kind }}</span>
-            <strong data-label="Tutar">{{ "%.2f"|format(movement.amount) }} ₺</strong>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="empty-state">Henüz finansal hareket bulunmuyor.</p>
-    {% endif %}
-  </section>
 </section>
 {% endblock %}

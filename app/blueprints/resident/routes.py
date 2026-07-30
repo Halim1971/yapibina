@@ -81,18 +81,9 @@ def index() -> Any:
         )
     except EntityNotFoundError:
         abort(404)
-    announcements = list_resident_announcements(
-        db.session,
-        organization_id=_organization_id(),
-        user_id=current_user.id,
-        page=1,
-        per_page=3,
-        include_read_state=False,
-    )
     return render_template(
         "resident/dashboard.html",
         dashboard=dashboard,
-        recent_announcements=announcements.items,
         format_try=format_try,
     )
 

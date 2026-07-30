@@ -1,27 +1,29 @@
 {% extends "base.html" %}
 {% from "components/nav.html" import resident_nav with context %}
-{% block title %}Dairem{% endblock %}
+{% block title %}{% if dashboard.apartment %}{{ dashboard.apartment.building_name }} - Bağımsız Bölüm {{ dashboard.apartment.apartment_label }}{% else %}Bağımsız Bölümüm{% endif %}{% endblock %}
 {% block navigation %}{{ resident_nav(dashboard.apartment.id if dashboard.apartment else none) }}{% endblock %}
 {% block content %}
 <section class="panel wide resident-page">
   <header class="section-header">
     <div>
-      <h1>Dairem</h1>
       {% if dashboard.apartment %}
-        <p>{{ dashboard.apartment.building_name }} · Daire {{ dashboard.apartment.apartment_label }}
+        <h1>{{ dashboard.apartment.building_name }} - Bağımsız Bölüm {{ dashboard.apartment.apartment_label }}</h1>
+        <p>
           {% if dashboard.apartment.block %}· Blok {{ dashboard.apartment.block }}{% endif %}
           {% if dashboard.apartment.floor %}· Kat {{ dashboard.apartment.floor }}{% endif %}
         </p>
+      {% else %}
+        <h1>Bağımsız Bölümüm</h1>
       {% endif %}
     </div>
   </header>
 
   {% if not dashboard.apartment %}
-    <div class="empty-state">Henüz hesabınıza bağlı aktif bir daire bulunmuyor.</div>
+    <div class="empty-state">Henüz hesabınıza bağlı aktif bir bağımsız bölüm bulunmuyor.</div>
   {% else %}
     {% if dashboard.apartments|length > 1 %}
       <form method="get" class="resident-apartment-picker">
-        <label for="apartment_id">Daire seçin</label>
+        <label for="apartment_id">Bağımsız bölüm seçin</label>
         <select id="apartment_id" name="apartment_id" onchange="this.form.submit()">
           {% for apartment in dashboard.apartments %}
             <option value="{{ apartment.id }}" {% if apartment.id == dashboard.apartment.id %}selected{% endif %}>
@@ -49,78 +51,14 @@
         <strong>{{ format_try(dashboard.overdue_debt) }}</strong>
         <small>{% if dashboard.overdue_debt > 0 %}Vadesi geçmiş açık tahakkuklar{% else %}Gecikmiş borcunuz bulunmuyor{% endif %}</small>
       </article>
-      <article>
-        <span>Son ödeme</span>
-        <strong>{{ format_try(dashboard.latest_payment.amount) if dashboard.latest_payment else "—" }}</strong>
-        <small>{{ dashboard.latest_payment.payment_date.strftime("%d.%m.%Y") if dashboard.latest_payment else "Henüz ödeme yok" }}</small>
-      </article>
-      <article>
-        <span>Son hareket</span>
-        <strong>{{ dashboard.latest_movement_date.strftime("%d.%m.%Y") if dashboard.latest_movement_date else "—" }}</strong>
-        <small>{% if dashboard.latest_movement_date %}En son finansal hareket tarihi{% else %}Henüz hareket yok{% endif %}</small>
-      </article>
-      {% if dashboard.unallocated_payment > 0 %}
-        <article class="unused-payment">
-          <span>Kullanılmamış ödeme</span>
-          <strong>{{ format_try(dashboard.unallocated_payment) }}</strong>
-          <small>Henüz bir borca uygulanmamış ödeme tutarıdır.</small>
-        </article>
-      {% endif %}
     </div>
 
     <div class="resident-dashboard-actions" aria-label="Hızlı işlemler">
-      <a class="button secondary" href="{{ url_for('resident.account', apartment_id=dashboard.apartment.id) }}">Hesap hareketleri ve aidat ekstresi</a>
-      <a class="button secondary" href="{{ url_for('resident.notifications') }}">
-        Bildirimler{% if unread_announcement_count %} ({{ unread_announcement_count }}){% endif %}
-      </a>
+      <a class="button secondary" href="{{ url_for('resident.account', apartment_id=dashboard.apartment.id) }}">Aidat Ekstresi</a>
+      <a class="button secondary" href="{{ url_for('resident.bank_transactions', apartment_id=dashboard.apartment.id) }}">Banka Hesap Hareketleri</a>
+      <a class="button secondary" href="{{ url_for('resident.expenses', apartment_id=dashboard.apartment.id) }}">Gider Dağılımı</a>
+      <a class="button secondary" href="{{ url_for('resident.announcements') }}">Duyurular</a>
     </div>
-
-    <div class="resident-sections resident-dashboard-grid">
-      <section>
-        <div class="section-header">
-          <h2>Son hareketler</h2>
-          <a href="{{ url_for('resident.account', apartment_id=dashboard.apartment.id) }}">Tümünü gör</a>
-        </div>
-        {% for movement in dashboard.recent_transactions %}
-          <div class="resident-list-row">
-            <span>{{ movement.occurred_on.strftime("%d.%m.%Y") }}</span>
-            <span>{{ movement.description }}</span>
-            <strong>{{ format_try(movement.running_balance) }}</strong>
-          </div>
-        {% else %}
-          <div class="empty-state resident-empty"><span aria-hidden="true">○</span><div><strong>Henüz hareket yok</strong><p>Tahakkuk ve ödeme hareketleriniz burada görünecektir.</p></div></div>
-        {% endfor %}
-      </section>
-
-      <section>
-        <div class="section-header">
-          <h2>Son duyurular</h2>
-          <a href="{{ url_for('resident.announcements') }}">Tümünü gör</a>
-        </div>
-        {% for announcement in recent_announcements %}
-          <div class="resident-list-row">
-            <span>{{ announcement.published_at|datetime_tr }}</span>
-            <a href="{{ url_for('resident.announcement_detail', announcement_id=announcement.id) }}">{{ announcement.title }}</a>
-            <span class="badge">Duyuru</span>
-          </div>
-        {% else %}
-          <div class="empty-state resident-empty"><span aria-hidden="true">◇</span><div><strong>Henüz duyuru yok</strong><p>Yönetimin yayınladığı duyurular burada görünecektir.</p></div></div>
-        {% endfor %}
-      </section>
-    </div>
-
-    <section class="resident-support" aria-labelledby="resident-support-title">
-      <h2 id="resident-support-title">Yönetim iletişim bilgileri</h2>
-      {% if branding.support_email or branding.support_phone or branding.website_url %}
-        <div class="resident-support-links">
-          {% if branding.support_email %}<a href="mailto:{{ branding.support_email }}">{{ branding.support_email }}</a>{% endif %}
-          {% if branding.support_phone %}<a href="tel:{{ branding.support_phone }}">{{ branding.support_phone }}</a>{% endif %}
-          {% if branding.website_url %}<a href="{{ branding.website_url }}" rel="noopener noreferrer">Web sitesi</a>{% endif %}
-        </div>
-      {% else %}
-        <p class="empty-state">Yönetim iletişim bilgileri henüz paylaşılmadı.</p>
-      {% endif %}
-    </section>
   {% endif %}
 </section>
 {% endblock %}

@@ -5,6 +5,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import Numeric, and_, case, cast, exists, func, or_, select
 from sqlalchemy.sql.elements import ColumnElement
@@ -410,7 +411,7 @@ def _resident_names(
 
 def _resident_summary(names: list[str]) -> str:
     if not names:
-        return "Resident yok"
+        return "İkamet eden yok"
     if len(names) == 1:
         return names[0]
     return f"{names[0]} ve {len(names) - 1} kişi"
@@ -596,8 +597,9 @@ def get_organization_building_detail(
     pages = math.ceil(total / per_page) if total else 0
     page = min(page, pages) if pages else 1
 
+    apartment_label = func.coalesce(Apartment.unit_code, Apartment.number)
     sort_expressions = {
-        "apartment": func.coalesce(Apartment.unit_code, Apartment.number),
+        "apartment": apartment_label,
         "residents": resident_count,
         "debt": outstanding_debt,
         "charges": current_charges,
@@ -605,7 +607,19 @@ def get_organization_building_detail(
         "last_payment": latest_payments.c.payment_date,
     }
     primary_sort = sort_expressions[sort]
-    ordering = primary_sort.desc() if direction == "desc" else primary_sort.asc()
+    ordering: tuple[Any, ...]
+    if sort == "apartment":
+        ordering = (
+            (func.length(apartment_label).desc(), apartment_label.desc())
+            if direction == "desc"
+            else (func.length(apartment_label).asc(), apartment_label.asc())
+        )
+    else:
+        ordering = (
+            (primary_sort.desc(),)
+            if direction == "desc"
+            else (primary_sort.asc(),)
+        )
     statement = (
         select(
             Apartment.id,
@@ -633,8 +647,8 @@ def get_organization_building_detail(
         statement = statement.where(search_condition)
     rows = session.execute(
         statement.order_by(
-            ordering,
-            func.coalesce(Apartment.unit_code, Apartment.number).asc(),
+            *ordering,
+            apartment_label.asc(),
             Apartment.id.asc(),
         )
         .offset((page - 1) * per_page)
@@ -656,7 +670,7 @@ def get_organization_building_detail(
                 for part in (
                     f"Blok {row.block}" if row.block else None,
                     f"Kat {row.floor}" if row.floor else None,
-                    f"Daire {row.number}",
+                    f"Bağımsız Bölüm {row.number}",
                 )
                 if part
             ),

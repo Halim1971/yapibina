@@ -5,7 +5,7 @@
 {% block content %}
 <section class="panel wide resident-page">
   <a class="back-link" href="{{ url_for('resident.account', apartment_id=detail.apartment.id) }}"><span aria-hidden="true">←</span> Aidat ekstresine dön</a>
-  <header class="resident-page-header"><div><p class="eyebrow">{{ "%02d"|format(detail.month) }}/{{ detail.year }}</p><h1>Ay Bazında Aidat Detayı</h1><p class="page-intro">{{ detail.apartment.building_name }} · Daire {{ detail.apartment.apartment_label }}</p></div></header>
+  <header class="resident-page-header"><div><p class="eyebrow">{{ "%02d"|format(detail.month) }}/{{ detail.year }}</p><h1>Ay Bazında Aidat Detayı</h1><p class="page-intro">{{ detail.apartment.building_name }} · Bağımsız Bölüm {{ detail.apartment.apartment_label }}</p></div></header>
   <div class="mobile-card-list">
     {% for category, amount in detail.items %}<article class="detail-card compact-card"><span>{{ category }}</span><strong>{{ format_try(amount) }}</strong></article>
     {% else %}<div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">₺</span><div><h2>Gider detayı bulunmuyor</h2><p>Bu dönemin gider payları henüz aktarılmamış olabilir.</p></div></div>{% endfor %}

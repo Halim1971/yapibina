@@ -73,7 +73,6 @@ from app.services.organization_building_detail import (
     get_organization_building_detail,
 )
 from app.services.organization_buildings import list_organization_buildings
-from app.services.organization_dashboard import get_organization_dashboard
 from app.services.organization_management import (
     create_apartment,
     create_building,
@@ -121,15 +120,7 @@ def _commit_or_form_error(form: FlaskForm, action: Callable[[], object]) -> bool
 @organization_blueprint.get("/dashboard")
 @organization_admin_required
 def index() -> str:
-    dashboard = get_organization_dashboard(
-        db.session,
-        organization_id=_organization_id(),
-        timezone_name=current_app.config["DEFAULT_TIMEZONE"],
-    )
-    return render_template(
-        "organization/index.html",
-        dashboard=dashboard,
-    )
+    return render_template("organization/index.html")
 
 
 @organization_blueprint.get("/buildings")
@@ -488,7 +479,7 @@ def apartment_new(building_id: uuid.UUID) -> Any:
             is_active=form.is_active.data,
         ),
     ):
-        flash("Daire oluşturuldu.", "success")
+        flash("Bağımsız bölüm oluşturuldu.", "success")
         return redirect(url_for("organization.apartments", building_id=building_id))
     return render_template("organization/apartment_form.html", form=form, building=building)
 
@@ -514,7 +505,7 @@ def apartment_edit(apartment_id: uuid.UUID) -> Any:
             is_active=form.is_active.data,
         ),
     ):
-        flash("Daire güncellendi.", "success")
+        flash("Bağımsız bölüm güncellendi.", "success")
         return redirect(url_for("organization.apartments", building_id=apartment.building_id))
     return render_template(
         "organization/apartment_form.html", form=form, building=apartment.building
@@ -703,7 +694,7 @@ def apartment_membership(user_id: uuid.UUID) -> Any:
             is_active=form.is_active.data,
         ),
     ):
-        flash("Daire üyeliği oluşturuldu.", "success")
+        flash("Bağımsız bölüm üyeliği oluşturuldu.", "success")
     return redirect(url_for("organization.user_detail", user_id=user_id))
 
 
@@ -839,7 +830,7 @@ def dues_batch_create() -> Any:
         db.session.rollback()
         flash(str(error), "error")
     else:
-        flash("Aidatlar tüm aktif daireler için oluşturuldu.", "success")
+        flash("Aidatlar tüm aktif bağımsız bölümler için oluşturuldu.", "success")
     return _dues_redirect(
         building_id,
         form.period_year.data,

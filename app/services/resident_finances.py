@@ -190,7 +190,7 @@ def _require_resident_identity(
         )
     )
     if permitted is None:
-        raise EntityNotFoundError("Resident erişimi bulunamadı.")
+        raise EntityNotFoundError("İkamet eden erişimi bulunamadı.")
 
 
 def list_resident_apartments(
@@ -230,7 +230,14 @@ def list_resident_apartments(
                 ApartmentMembership.ends_at >= now,
             ),
         )
-        .order_by(Building.name, Apartment.block, Apartment.floor, Apartment.id)
+        .order_by(
+            Building.name,
+            Apartment.block,
+            Apartment.floor,
+            func.length(func.coalesce(Apartment.unit_code, Apartment.number)),
+            func.coalesce(Apartment.unit_code, Apartment.number),
+            Apartment.id,
+        )
     )
     return [
         ResidentApartment(
@@ -263,7 +270,7 @@ def resolve_resident_apartment(
         return (apartments[0] if apartments else None), apartments
     selected = next((item for item in apartments if item.id == apartment_id), None)
     if selected is None:
-        raise EntityNotFoundError("Daire bulunamadı.")
+        raise EntityNotFoundError("Bağımsız bölüm bulunamadı.")
     return selected, apartments
 
 
@@ -357,7 +364,7 @@ def get_monthly_due_detail(
         apartment_id=apartment_id,
     )
     if selected is None:
-        raise EntityNotFoundError("Daire bulunamadı.")
+        raise EntityNotFoundError("Bağımsız bölüm bulunamadı.")
     summary = next(
         (
             item
@@ -474,7 +481,7 @@ def list_resident_expenses(
         apartment_id=apartment_id,
     )
     if selected is None:
-        raise EntityNotFoundError("Daire bulunamadı.")
+        raise EntityNotFoundError("Bağımsız bölüm bulunamadı.")
     page = max(page, 1)
     per_page = per_page if per_page in {20, 50, 100} else 20
     conditions = (
@@ -723,7 +730,7 @@ def get_resident_payments(
         apartment_id=apartment_id,
     )
     if selected is None:
-        raise EntityNotFoundError("Daire bulunamadı.")
+        raise EntityNotFoundError("Bağımsız bölüm bulunamadı.")
     payments = _posted_payments(
         session,
         organization_id=organization_id,
@@ -756,7 +763,7 @@ def get_resident_account_statement(
         apartment_id=apartment_id,
     )
     if selected is None:
-        raise EntityNotFoundError("Daire bulunamadı.")
+        raise EntityNotFoundError("Bağımsız bölüm bulunamadı.")
     active_filters = filters or StatementFilters()
     charges = _posted_charges(
         session,

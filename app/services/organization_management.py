@@ -92,7 +92,9 @@ def create_apartment(
             Apartment.building_id == building_id, Apartment.unit_code == normalized_code
         )
     ):
-        raise DuplicateEntityError("Bu daire kodu bina içinde kullanılıyor.")
+        raise DuplicateEntityError(
+            "Bu bağımsız bölüm kodu bina içinde kullanılıyor."
+        )
     apartment = Apartment(
         organization_id=organization_id,
         building_id=building_id,
@@ -106,7 +108,9 @@ def create_apartment(
     try:
         session.flush()
     except IntegrityError as error:
-        raise DuplicateEntityError("Bu daire kodu bina içinde kullanılıyor.") from error
+        raise DuplicateEntityError(
+            "Bu bağımsız bölüm kodu bina içinde kullanılıyor."
+        ) from error
     return apartment
 
 
@@ -131,7 +135,9 @@ def update_apartment(
         )
     )
     if duplicate:
-        raise DuplicateEntityError("Bu daire kodu bina içinde kullanılıyor.")
+        raise DuplicateEntityError(
+            "Bu bağımsız bölüm kodu bina içinde kullanılıyor."
+        )
     apartment.number = number.strip()
     apartment.floor = floor or None
     apartment.block = block or None

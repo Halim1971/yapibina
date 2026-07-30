@@ -18,8 +18,8 @@
 </article>
 <section><h2>Okunma Özeti</h2><p class="muted">Bu değerler teslim metriği değil, mevcut üyeliklere göre uygulama içinde erişebilecek sakinleri gösterir.</p>
   <div class="summary-grid">
-    <article><span>Erişebilecek sakin</span><strong>{{ announcement.engagement.reachable_resident_count }}</strong></article>
-    <article><span>Okuyan sakin</span><strong>{{ announcement.engagement.read_resident_count }}</strong></article>
+    <article><span>Erişebilecek ikamet eden</span><strong>{{ announcement.engagement.reachable_resident_count }}</strong></article>
+    <article><span>Okuyan ikamet eden</span><strong>{{ announcement.engagement.read_resident_count }}</strong></article>
     <article><span>Henüz okumayan</span><strong>{{ announcement.engagement.unread_resident_count }}</strong></article>
     <article><span>Okunma oranı</span><strong>{{ announcement.engagement.read_rate ~ "%" if announcement.engagement.read_rate is not none else "—" }}</strong></article>
   </div>

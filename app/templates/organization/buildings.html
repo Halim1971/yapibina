@@ -20,7 +20,7 @@
       <label for="building-sort">Sıralama</label>
       <select id="building-sort" name="sort">
         <option value="name" {% if listing.sort == "name" %}selected{% endif %}>Bina adı</option>
-        <option value="apartments" {% if listing.sort == "apartments" %}selected{% endif %}>Daire sayısı</option>
+        <option value="apartments" {% if listing.sort == "apartments" %}selected{% endif %}>Bağımsız bölüm sayısı</option>
         <option value="debt" {% if listing.sort == "debt" %}selected{% endif %}>Açık borç</option>
         <option value="payments" {% if listing.sort == "payments" %}selected{% endif %}>Bu ay tahsilat</option>
       </select>
@@ -44,7 +44,7 @@
   {% if listing.items %}
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Bina</th><th>Adres</th><th>Daire</th><th>Aktif resident</th><th>Açık borç</th><th>Bu ay tahsilat</th><th>Durum</th><th></th></tr></thead>
+        <thead><tr><th>Bina</th><th>Adres</th><th>Bağımsız bölüm</th><th>Aktif ikamet eden</th><th>Açık borç</th><th>Bu ay tahsilat</th><th>Durum</th><th></th></tr></thead>
         <tbody>
         {% for item in listing.items %}
           <tr>

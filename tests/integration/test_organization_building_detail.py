@@ -392,7 +392,7 @@ def test_building_detail_metrics_residents_payments_and_movements() -> None:
     assert first.current_month_payments == Decimal("240.00")
     assert first.last_payment_date == latest.payment_date
     assert first.last_payment_amount == Decimal("200.00")
-    assert second.resident_summary == "Resident yok"
+    assert second.resident_summary == "İkamet eden yok"
     assert {movement.kind for movement in detail.movements} == {"Borç", "Ödeme"}
     assert all(movement.description != "Görünmemeli" for movement in detail.movements)
     assert detail.movements[0].movement_date == date(2026, 7, 18)
@@ -477,6 +477,9 @@ def test_building_detail_search_sort_pagination_and_query_budget() -> None:
     assert first_page.apartments.sort == "apartment"
     assert len(first_page.apartments.items) == 20
     assert len(second_page.apartments.items) == 5
+    assert [item.label for item in first_page.apartments.items[:10]] == [
+        f"COK-{number}" for number in range(1, 11)
+    ]
     assert not (
         {item.id for item in first_page.apartments.items}
         & {item.id for item in second_page.apartments.items}
@@ -690,7 +693,7 @@ def test_apartment_detail_route_scope_authorization_and_building_link(
     _login(client, admin)
     response = client.get(url, headers={"Host": HOST})
     assert response.status_code == 200
-    assert b"Daire ROUTE-1" in response.data
+    assert b"Ba\xc4\x9f\xc4\xb1ms\xc4\xb1z B\xc3\xb6l\xc3\xbcm ROUTE-1" in response.data
     building_response = client.get(
         f"/organization/buildings/{building.id}",
         headers={"Host": HOST},
@@ -1044,7 +1047,7 @@ def test_resident_detail_route_authorization_and_tenant_isolation(
     response = client.get(url, headers={"Host": HOST})
     assert response.status_code == 200
     assert b"Hedef Resident" in response.data
-    assert b"Resident Detay\xc4\xb1" in client.get(
+    assert "\u0130kamet Eden Detay\u0131".encode() in client.get(
         f"/organization/buildings/{building.id}/apartments/{apartment.id}",
         headers={"Host": HOST},
     ).data

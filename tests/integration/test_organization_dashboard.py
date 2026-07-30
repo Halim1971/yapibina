@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from datetime import date, datetime, timezone
 from decimal import Decimal
 
@@ -221,11 +222,20 @@ def test_dashboard_access_and_empty_state(client: FlaskClient) -> None:
     response = client.get("/organization/dashboard", headers={"Host": HOST})
     assert response.status_code == 200
     assert "Genel Bakış".encode() in response.data
-    assert "Henüz bina bulunmuyor.".encode() in response.data
-    assert "Henüz finansal hareket bulunmuyor.".encode() in response.data
-    assert "Henüz veri içe aktarılmadı".encode() in response.data
+    assert b"Binalar" in response.data
+    assert b"Aidat ve \xc3\x96demeler" in response.data
+    assert b"Toplam bina" not in response.data
+    assert b"Son finansal hareketler" not in response.data
 
-    client.post("/auth/logout", headers={"Host": HOST})
+    csrf_match = re.search(rb'name="csrf_token" value="([^"]+)"', response.data)
+    assert csrf_match is not None
+    logout = client.post(
+        "/auth/logout",
+        data={"csrf_token": csrf_match.group(1).decode()},
+        headers={"Host": HOST},
+    )
+    assert logout.status_code == 302
+    assert logout.headers["Location"].endswith("/auth/login")
     _login(client, member.email)
     assert (
         client.get("/organization/dashboard", headers={"Host": HOST}).status_code

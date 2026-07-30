@@ -264,7 +264,10 @@ def test_resident_access_and_empty_state(client: FlaskClient) -> None:
     _login(client, resident.email)
     response = client.get("/resident/", headers={"Host": HOST})
     assert response.status_code == 200
-    assert "Henüz hesabınıza bağlı aktif bir daire bulunmuyor.".encode() in response.data
+    assert (
+        "Henüz hesabınıza bağlı aktif bir bağımsız bölüm bulunmuyor.".encode()
+        in response.data
+    )
 
 
 def test_unauthenticated_known_tenant_redirects_to_login(client: FlaskClient) -> None:
@@ -340,7 +343,10 @@ def test_ineffective_apartment_membership_returns_empty_state(
     db.session.commit()
     _login(client, resident.email)
     response = client.get("/resident/", headers={"Host": HOST})
-    assert "Henüz hesabınıza bağlı aktif bir daire bulunmuyor.".encode() in response.data
+    assert (
+        "Henüz hesabınıza bağlı aktif bir bağımsız bölüm bulunmuyor.".encode()
+        in response.data
+    )
 
 
 def test_inactive_apartment_or_building_is_not_available(client: FlaskClient) -> None:
@@ -349,13 +355,19 @@ def test_inactive_apartment_or_building_is_not_available(client: FlaskClient) ->
     db.session.commit()
     _login(client, resident.email)
     response = client.get("/resident/", headers={"Host": HOST})
-    assert "Henüz hesabınıza bağlı aktif bir daire bulunmuyor.".encode() in response.data
+    assert (
+        "Henüz hesabınıza bağlı aktif bir bağımsız bölüm bulunmuyor.".encode()
+        in response.data
+    )
 
     apartment.is_active = True
     building.is_active = False
     db.session.commit()
     response = client.get("/resident/", headers={"Host": HOST})
-    assert "Henüz hesabınıza bağlı aktif bir daire bulunmuyor.".encode() in response.data
+    assert (
+        "Henüz hesabınıza bağlı aktif bir bağımsız bölüm bulunmuyor.".encode()
+        in response.data
+    )
 
 
 def test_multiple_apartments_can_be_selected_but_unrelated_one_is_404(
@@ -369,7 +381,7 @@ def test_multiple_apartments_can_be_selected_but_unrelated_one_is_404(
     _login(client, resident.email)
 
     response = client.get("/resident/", headers={"Host": HOST})
-    assert b"Daire se\xc3\xa7in" in response.data
+    assert "Bağımsız bölüm seçin".encode() in response.data
     assert b"A-2" in response.data and b"A-3" in response.data
     assert b"A-4" not in response.data
     assert client.get(
@@ -387,7 +399,7 @@ def test_single_apartment_does_not_show_picker(client: FlaskClient) -> None:
     _, resident, _, _ = _seed_resident()
     _login(client, resident.email)
     response = client.get("/resident/", headers={"Host": HOST})
-    assert b"Daire se\xc3\xa7in" not in response.data
+    assert "Bağımsız bölüm seçin".encode() not in response.data
 
 
 def test_cross_tenant_apartment_cannot_be_selected(client: FlaskClient) -> None:
@@ -421,8 +433,7 @@ def test_dashboard_debt_partial_payment_and_unallocated_are_separate(
 
     response = client.get("/resident/", headers={"Host": HOST})
     assert b"300,00 TL" in response.data
-    assert "Kullanılmamış ödeme".encode() in response.data
-    assert b"200,00 TL" in response.data
+    assert "Kullanılmamış ödeme".encode() not in response.data
     dashboard = get_resident_dashboard(
         db.session,
         organization_id=organization.id,
@@ -626,8 +637,13 @@ def test_resident_navigation_and_ui_do_not_expose_technical_terms(
     _, resident, _, _ = _seed_resident()
     _login(client, resident.email)
     response = client.get("/resident/", headers={"Host": HOST})
-    assert b"Dairem" in response.data
-    assert b"Hesap hareketleri" in response.data
+    assert "Bağımsız Bölüm".encode() in response.data
+    assert b"Aidat Ekstresi" in response.data
+    assert b"Banka Hesap Hareketleri" in response.data
+    assert "Gider Dağılımı".encode() in response.data
+    assert b"Duyurular" in response.data
+    assert b"Son hareket" not in response.data
+    assert b"Son duyurular" not in response.data
     assert b"Binalar" not in response.data
     assert b"resident-summary" in response.data
     for term in (
@@ -650,7 +666,7 @@ def test_service_requires_organization_membership() -> None:
     apartment = _apartment(organization, building, "S-1")
     _apartment_membership(organization, apartment, user)
     db.session.commit()
-    with pytest.raises(EntityNotFoundError, match="Resident erişimi bulunamadı"):
+    with pytest.raises(EntityNotFoundError, match="İkamet eden erişimi bulunamadı"):
         list_resident_apartments(
             db.session,
             organization_id=organization.id,

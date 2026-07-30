@@ -1,11 +1,11 @@
 {% macro platform_nav() %}
   <nav class="nav"><a class="nav-brand" href="{{ url_for('platform.organizations') }}">Yapıbina</a><a href="{{ url_for('platform.organizations') }}">Organizations</a>
-    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
+    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}
 {% macro organization_nav() %}
   <nav class="nav"><a class="nav-brand" href="{{ url_for('organization.index') }}">{% if branding.logo_asset_key %}<img class="brand-logo" src="{{ url_for('organization.branding_logo') }}" alt="">{% endif %}<span>{{ branding.panel_title }}</span></a><a href="{{ url_for('organization.index') }}">Genel Bakış</a><a href="{{ url_for('organization.dues') }}">Aidat ve Ödemeler</a><a href="{{ url_for('organization.announcements') }}">Duyurular</a><a href="{{ url_for('organization.imports') }}">Veri İçe Aktarma</a><a href="{{ url_for('organization.buildings') }}">Binalar</a><a href="{{ url_for('organization.users') }}">Kişiler</a><a href="{{ url_for('organization.branding_settings') }}">Marka Ayarları</a>
-    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
+    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}
 {% macro resident_nav(apartment_id=None) %}
@@ -16,6 +16,6 @@
       <a {% if request.endpoint == "resident.expenses" %}class="active" aria-current="page"{% endif %} href="{{ url_for('resident.expenses', apartment_id=apartment_id) }}">Gider Dağılımı</a>
       <a {% if request.endpoint in ("resident.announcements", "resident.announcement_detail") %}class="active" aria-current="page"{% endif %} href="{{ url_for('resident.announcements') }}">Duyurular{% if unread_announcement_count %} <span class="notification-count" aria-label="{{ unread_announcement_count }} okunmamış duyuru">{{ "99+" if unread_announcement_count > 99 else unread_announcement_count }}</span>{% endif %}</a>
     </div>
-    <form method="post" action="{{ url_for('auth.logout') }}">{{ csrf_token() }}<button type="submit">Çıkış</button></form>
+    <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}

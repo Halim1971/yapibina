@@ -111,10 +111,10 @@ class BuildingForm(FlaskForm):  # type: ignore[misc]
 
 
 class ApartmentForm(FlaskForm):  # type: ignore[misc]
-    number = StringField("Daire numarası", validators=[InputRequired(), Length(max=30)])
+    number = StringField("Bağımsız bölüm numarası", validators=[InputRequired(), Length(max=30)])
     floor = StringField("Kat", validators=[Optional(), Length(max=30)])
     block = StringField("Blok", validators=[Optional(), Length(max=30)])
-    unit_code = StringField("Daire kodu", validators=[InputRequired(), Length(max=60)])
+    unit_code = StringField("Bağımsız bölüm kodu", validators=[InputRequired(), Length(max=60)])
     is_active = BooleanField("Aktif", default=True)
 
 

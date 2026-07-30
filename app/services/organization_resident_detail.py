@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 
-from sqlalchemy import and_, exists, or_, select
+from sqlalchemy import and_, exists, func, or_, select
 
 from app.models import (
     Apartment,
@@ -86,7 +86,7 @@ def _resident_identity(
         )
     ).scalar_one_or_none()
     if row is None:
-        raise ServiceValidationError("Resident bulunamadı.")
+        raise ServiceValidationError("İkamet eden bulunamadı.")
 
     return ResidentIdentity(
         id=row.id,
@@ -158,8 +158,8 @@ def _active_placements(
         )
         .order_by(
             Building.name,
-            Apartment.unit_code,
-            Apartment.number,
+            func.length(func.coalesce(Apartment.unit_code, Apartment.number)),
+            func.coalesce(Apartment.unit_code, Apartment.number),
             ApartmentMembership.id,
         )
     ).all()
@@ -227,7 +227,7 @@ def get_organization_resident_detail(
         None,
     )
     if selected_apartment_id is not None and selected is None:
-        raise ServiceValidationError("Aktif daire bağlantısı bulunamadı.")
+        raise ServiceValidationError("Aktif bağımsız bölüm bağlantısı bulunamadı.")
     if selected is None and placements:
         selected = placements[0]
 

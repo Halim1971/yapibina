@@ -23,7 +23,7 @@
       <article><span>Toplam tahakkuk</span><strong>{{ "%.2f"|format(dashboard.total_charges) }} ₺</strong></article>
       <article><span>Tahsil edilen</span><strong>{{ "%.2f"|format(dashboard.total_collected) }} ₺</strong></article>
       <article><span>Kalan</span><strong>{{ "%.2f"|format(dashboard.total_outstanding) }} ₺</strong></article>
-      <article><span>Daire durumu</span><strong>{{ dashboard.fully_paid_count }} ödendi · {{ dashboard.partially_paid_count }} kısmi · {{ dashboard.debtor_count }} borçlu</strong></article>
+      <article><span>Bağımsız bölüm durumu</span><strong>{{ dashboard.fully_paid_count }} ödendi · {{ dashboard.partially_paid_count }} kısmi · {{ dashboard.debtor_count }} borçlu</strong></article>
     </div>
 
     {% if not dashboard.batch %}
@@ -38,7 +38,7 @@
           <div class="field">{{ batch_form.default_amount.label }}{{ batch_form.default_amount }}</div>
           <div class="field">{{ batch_form.due_date.label }}{{ batch_form.due_date }}</div>
           <div class="field">{{ batch_form.description.label }}{{ batch_form.description }}</div>
-          <button class="button" type="submit">Tüm aktif dairelere uygula</button>
+          <button class="button" type="submit">Tüm aktif bağımsız bölümlere uygula</button>
         </form>
       </details>
     {% else %}
@@ -49,9 +49,9 @@
       </form>
     {% endif %}
 
-    <div class="dues-table" role="table" aria-label="Daire aidat durumu">
+    <div class="dues-table" role="table" aria-label="Bağımsız bölüm aidat durumu">
       <div class="dues-row dues-head" role="row">
-        <span>Daire</span><span>Kat / Blok</span><span>Borç</span>
+        <span>Bağımsız bölüm</span><span>Kat / Blok</span><span>Borç</span>
         <span>Ödenen</span><span>Kalan</span><span>Durum</span><span>İşlem</span>
       </div>
       {% for row in dashboard.rows %}
@@ -65,10 +65,10 @@
           <a class="row-action" href="{{ url_for('organization.dues_apartment_detail', apartment_id=row.apartment_id) }}">Ödeme gir</a>
         </div>
       {% else %}
-        <p>Bu binada aktif daire bulunmuyor.</p>
+        <p>Bu binada aktif bağımsız bölüm bulunmuyor.</p>
       {% endfor %}
     </div>
-    <p class="muted">{{ dashboard.apartment_count }} aktif daire · {{ dashboard.charged_count }} daire için aidat oluşturuldu.</p>
+    <p class="muted">{{ dashboard.apartment_count }} aktif bağımsız bölüm · {{ dashboard.charged_count }} bağımsız bölüm için aidat oluşturuldu.</p>
   {% else %}
     <p>Aktif bina bulunmuyor. Önce bina oluşturun veya bir binayı aktif hale getirin.</p>
   {% endif %}

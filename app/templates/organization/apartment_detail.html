@@ -1,17 +1,17 @@
 {% extends "base.html" %}
 {% from "components/nav.html" import organization_nav with context %}
-{% block title %}Daire {{ detail.identity.label }}{% endblock %}
+{% block title %}Bağımsız Bölüm {{ detail.identity.label }}{% endblock %}
 {% block navigation %}{{ organization_nav() }}{% endblock %}
 {% block content %}
 <section class="panel wide apartment-detail">
   <nav class="breadcrumb" aria-label="Sayfa yolu">
     <a href="{{ url_for('organization.buildings') }}">Binalar</a><span>/</span>
     <a href="{{ url_for('organization.building_detail', building_id=detail.identity.building_id) }}">{{ detail.identity.building_name }}</a><span>/</span>
-    <span>Daire {{ detail.identity.label }}</span>
+    <span>Bağımsız Bölüm {{ detail.identity.label }}</span>
   </nav>
   <header class="section-header">
     <div>
-      <h1>Daire {{ detail.identity.label }}</h1>
+      <h1>Bağımsız Bölüm {{ detail.identity.label }}</h1>
       <p class="muted">{{ detail.identity.building_name }}{% if detail.identity.block %} · Blok {{ detail.identity.block }}{% endif %}{% if detail.identity.floor %} · Kat {{ detail.identity.floor }}{% endif %}</p>
     </div>
     <div class="actions">
@@ -41,11 +41,11 @@
           <span>{{ resident.email }}</span>
           <span>{{ resident.phone or "Telefon belirtilmedi" }}</span>
           <small>Başlangıç: {{ resident.starts_at.strftime("%d.%m.%Y") }}</small>
-          <a href="{{ url_for('organization.resident_detail', resident_id=resident.id, apartment_id=detail.identity.id) }}">Resident Detayı</a>
+          <a href="{{ url_for('organization.resident_detail', resident_id=resident.id, apartment_id=detail.identity.id) }}">İkamet Eden Detayı</a>
         </article>
       {% endfor %}
       </div>
-    {% else %}<p class="empty-state">Bu daireye bağlı aktif resident bulunmuyor.</p>{% endif %}
+    {% else %}<p class="empty-state">Bu bağımsız bölüme bağlı aktif ikamet eden bulunmuyor.</p>{% endif %}
   </section>
 
   <section class="dashboard-section">
