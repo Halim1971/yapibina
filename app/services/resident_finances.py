@@ -429,6 +429,23 @@ def list_resident_bank_movements(
     )
     if building_id not in {item.building_id for item in apartments}:
         raise EntityNotFoundError("Bina bulunamadı.")
+    return list_building_bank_movements(
+        session,
+        organization_id=organization_id,
+        building_id=building_id,
+        page=page,
+        per_page=per_page,
+    )
+
+
+def list_building_bank_movements(
+    session: SessionLike,
+    *,
+    organization_id: uuid.UUID,
+    building_id: uuid.UUID,
+    page: int,
+    per_page: int,
+) -> tuple[tuple[BankMovementItem, ...], int]:
     page = max(page, 1)
     per_page = per_page if per_page in {20, 50, 100} else 20
     conditions = (

@@ -4,7 +4,7 @@
   </nav>
 {% endmacro %}
 {% macro organization_nav() %}
-  <nav class="nav"><a class="nav-brand" href="{{ url_for('organization.index') }}">{% if branding.logo_asset_key %}<img class="brand-logo" src="{{ url_for('organization.branding_logo') }}" alt="">{% endif %}<span>{{ branding.panel_title }}</span></a><a href="{{ url_for('organization.index') }}">Genel Bakış</a><a href="{{ url_for('organization.dues') }}">Aidatlar</a><a href="{{ url_for('organization.announcements') }}">Duyurular</a><a href="{{ url_for('organization.buildings') }}">Binalar</a><a href="{{ url_for('organization.users') }}">Kişiler</a><a href="{{ url_for('organization.branding_settings') }}">Marka Ayarları</a>
+  <nav class="nav"><a class="nav-brand" href="{{ url_for('organization.index') }}">{% if branding.logo_asset_key %}<img class="brand-logo" src="{{ url_for('organization.branding_logo') }}" alt="">{% endif %}<span>{{ branding.panel_title }}</span></a><a href="{{ url_for('organization.index') }}">Genel Bakış</a><a href="{{ url_for('organization.buildings') }}">Binalar</a><a href="{{ url_for('organization.bank_transactions') }}">Banka Hareketleri</a><a href="{{ url_for('organization.dues') }}">Aidatlar</a><a href="{{ url_for('organization.announcements') }}">Duyurular</a><a href="{{ url_for('organization.users') }}">Kişiler</a><a href="{{ url_for('organization.branding_settings') }}">Marka Ayarları</a>
     <form method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Çıkış</button></form>
   </nav>
 {% endmacro %}

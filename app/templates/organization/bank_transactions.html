@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav with context %}
+{% block title %}Banka Hareketleri{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="panel wide resident-page">
+  <header class="section-header">
+    <div>
+      <h1>Banka Hareketleri</h1>
+      <p class="muted">Bina bazında banka hesap hareketlerini inceleyin.</p>
+    </div>
+  </header>
+
+  {% if buildings %}
+    <form method="get" class="resident-apartment-picker">
+      <label for="building_id">Bina seçin</label>
+      <select id="building_id" name="building_id" onchange="this.form.submit()">
+        {% for building in buildings %}<option value="{{ building.id }}" {% if selected and building.id == selected.id %}selected{% endif %}>{{ building.name }}</option>{% endfor %}
+      </select>
+      <input type="hidden" name="per_page" value="{{ per_page }}">
+      <noscript><button type="submit">Göster</button></noscript>
+    </form>
+
+    <div class="section-header bank-list-heading">
+      <div><h2>{{ selected.name }}</h2><p class="muted">Toplam {{ total }} hesap hareketi</p></div>
+    </div>
+    <div class="mobile-card-list">
+      {% for item in items %}
+        <article class="detail-card movement-card">
+          <div class="card-heading"><time class="card-date">{{ item.transaction_date.strftime("%d.%m.%Y") }}</time><span class="badge">{{ item.category }}</span></div>
+          <h2>{{ item.description }}</h2>
+          <dl class="compact-values">
+            <div><dt>{% if item.inflow %}Giriş{% else %}Çıkış{% endif %}</dt><dd class="transaction-amount {{ 'positive' if item.inflow else 'negative' }}">{{ "+" if item.inflow else "−" }}{{ format_try(item.inflow if item.inflow else item.outflow) }}</dd></div>
+            <div><dt>İşlem sonrası bakiye</dt><dd>{{ format_try(item.balance) }}</dd></div>
+          </dl>
+        </article>
+      {% else %}
+        <div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">↔</span><div><h2>Henüz banka hareketi bulunmuyor</h2><p>Bu binaya ait hareketler aktarıldığında burada gösterilecektir.</p></div></div>
+      {% endfor %}
+    </div>
+    {% if total > per_page %}
+      <nav class="pagination" aria-label="Banka hareketi sayfaları">
+        {% if page > 1 %}<a href="{{ url_for('organization.bank_transactions', building_id=selected.id, page=page-1, per_page=per_page) }}">Önceki</a>{% endif %}
+        <span>{{ page }}</span>
+        {% if page * per_page < total %}<a href="{{ url_for('organization.bank_transactions', building_id=selected.id, page=page+1, per_page=per_page) }}">Sonraki</a>{% endif %}
+      </nav>
+    {% endif %}
+  {% else %}
+    <div class="empty-state"><h2>Aktif bina bulunmuyor</h2><p>Banka hareketlerini görüntülemek için aktif bir bina gerekir.</p></div>
+  {% endif %}
+</section>
+{% endblock %}

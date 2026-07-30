@@ -83,6 +83,10 @@ from app.services.organization_resident_detail import (
     get_organization_resident_detail,
 )
 from app.services.payments import auto_allocate_payment, record_payment
+from app.services.resident_finances import (
+    format_try,
+    list_building_bank_movements,
+)
 from app.services.tenancy import require_apartment, require_building
 from app.services.user_management import (
     assign_apartment_membership,
@@ -142,6 +146,56 @@ def buildings() -> str:
         or current_app.config["MANAGEMENT_PAGE_SIZE"],
     )
     return render_template("organization/buildings.html", listing=listing)
+
+
+@organization_blueprint.get("/bank-transactions")
+@organization_admin_required
+def bank_transactions() -> str:
+    buildings = _dues_buildings()
+    selected: Building | None = None
+    requested_building = request.args.get("building_id")
+    if requested_building:
+        try:
+            requested_id = uuid.UUID(requested_building)
+        except ValueError:
+            abort(404)
+        selected = next(
+            (building for building in buildings if building.id == requested_id),
+            None,
+        )
+        if selected is None:
+            abort(404)
+    elif buildings:
+        selected = buildings[0]
+
+    page = max(request.args.get("page", 1, type=int) or 1, 1)
+    per_page = request.args.get(
+        "per_page",
+        current_app.config["MANAGEMENT_PAGE_SIZE"],
+        type=int,
+    ) or current_app.config["MANAGEMENT_PAGE_SIZE"]
+    per_page = per_page if per_page in {20, 50, 100} else 20
+    items, total = (
+        list_building_bank_movements(
+            db.session,
+            organization_id=_organization_id(),
+            building_id=selected.id,
+            page=page,
+            per_page=per_page,
+        )
+        if selected
+        else ((), 0)
+    )
+    return render_template(
+        "organization/bank_transactions.html",
+        buildings=buildings,
+        selected=selected,
+        items=items,
+        total=total,
+        page=page,
+        per_page=per_page,
+        format_try=format_try,
+    )
 
 
 @organization_blueprint.route("/buildings/new", methods=["GET", "POST"])

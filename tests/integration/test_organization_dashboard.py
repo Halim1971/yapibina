@@ -16,6 +16,7 @@ from app.models import (
     ApartmentMembership,
     ApartmentMembershipRole,
     Building,
+    BuildingBankTransaction,
     ChargeType,
     DomainState,
     DomainType,
@@ -223,6 +224,7 @@ def test_dashboard_access_and_empty_state(client: FlaskClient) -> None:
     assert response.status_code == 200
     assert "Genel Bakış".encode() in response.data
     assert b"Binalar" in response.data
+    assert b"Banka Hareketleri" in response.data
     assert b"Aidatlar" in response.data
     assert b"Veri \xc4\xb0\xc3\xa7e Aktarma" not in response.data
     assert b"Toplam bina" not in response.data
@@ -243,6 +245,77 @@ def test_dashboard_access_and_empty_state(client: FlaskClient) -> None:
         == 403
     )
     assert organization.id is not None
+
+
+def test_organization_bank_movements_are_building_and_tenant_scoped(
+    client: FlaskClient,
+) -> None:
+    organization = _organization("bank-dashboard", HOST)
+    admin = _user("bank-dashboard-admin@example.com")
+    db.session.add(
+        OrganizationMembership(
+            organization_id=organization.id,
+            user_id=admin.id,
+            role=OrganizationMembershipRole.ORGANIZATION_ADMIN,
+        )
+    )
+    first = Building(
+        organization_id=organization.id,
+        name="Birinci Apartman",
+        code="BANK-1",
+    )
+    second = Building(
+        organization_id=organization.id,
+        name="İkinci Apartman",
+        code="BANK-2",
+    )
+    other = _organization("other-bank", "other-bank.example.com")
+    other_building = Building(
+        organization_id=other.id,
+        name="Başka Tenant Binası",
+        code="OTHER-BANK",
+    )
+    db.session.add_all([first, second, other_building])
+    db.session.flush()
+    for building, source_key, description in (
+        (first, "BANK-1-TX", "Birinci bina hareketi"),
+        (second, "BANK-2-TX", "İkinci bina hareketi"),
+        (other_building, "OTHER-TX", "Başka tenant hareketi"),
+    ):
+        db.session.add(
+            BuildingBankTransaction(
+                organization_id=building.organization_id,
+                building_id=building.id,
+                source_key=source_key,
+                transaction_date=date(2026, 7, 1),
+                description=description,
+                transaction_type="credit",
+                inflow=Decimal("100.00"),
+                outflow=Decimal("0.00"),
+                balance=Decimal("100.00"),
+                category="Aidat",
+                reference=source_key,
+            )
+        )
+    db.session.commit()
+
+    _login(client, admin.email)
+    response = client.get(
+        f"/organization/bank-transactions?building_id={second.id}",
+        headers={"Host": HOST},
+    )
+
+    assert response.status_code == 200
+    assert "İkinci bina hareketi".encode() in response.data
+    assert b"Birinci bina hareketi" not in response.data
+    assert "Başka tenant hareketi".encode() not in response.data
+    assert (
+        client.get(
+            f"/organization/bank-transactions?building_id={other_building.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
 
 
 def test_dashboard_metrics_imports_movements_and_tenant_isolation() -> None:
