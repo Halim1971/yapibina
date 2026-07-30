@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 from decimal import Decimal
 from typing import Final
+from zoneinfo import ZoneInfo
 
 from flask import Flask, g
 
@@ -27,6 +29,12 @@ def format_try(value: Decimal) -> str:
 
 
 def register_context_processors(app: Flask) -> None:
+    @app.template_filter("datetime_tr")
+    def datetime_tr(value: datetime) -> str:
+        return value.astimezone(
+            ZoneInfo(app.config["DEFAULT_TIMEZONE"])
+        ).strftime("%d.%m.%Y %H:%M")
+
     @app.context_processor
     def default_theme() -> dict[str, object]:
         tenant = getattr(g, "tenant", None)

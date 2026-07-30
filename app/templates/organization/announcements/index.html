@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav with context %}
+{% block title %}Duyurular{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="page-header">
+  <div><p class="eyebrow">İletişim</p><h1>Duyurular</h1><p>{{ listing.total }} kayıt</p></div>
+  <a class="button" href="{{ url_for('organization.announcement_new') }}">Yeni Duyuru</a>
+</section>
+<form class="filter-bar" method="get">
+  <label>Arama<input name="q" value="{{ listing.search }}" placeholder="Başlık veya metin"></label>
+  <label>Durum<select name="status">
+    <option value="">Tümü</option>
+    <option value="draft" {% if listing.status_filter == "draft" %}selected{% endif %}>Taslak</option>
+    <option value="published" {% if listing.status_filter == "published" %}selected{% endif %}>Yayınlandı</option>
+    <option value="archived" {% if listing.status_filter == "archived" %}selected{% endif %}>Arşivlendi</option>
+  </select></label>
+  <label>Hedef<select name="audience">
+    <option value="">Tümü</option>
+    <option value="organization" {% if listing.audience_filter == "organization" %}selected{% endif %}>Tüm organization</option>
+    <option value="buildings" {% if listing.audience_filter == "buildings" %}selected{% endif %}>Seçili binalar</option>
+  </select></label>
+  <label>Sırala<select name="sort">
+    <option value="created_at" {% if listing.sort == "created_at" %}selected{% endif %}>Oluşturulma</option>
+    <option value="published_at" {% if listing.sort == "published_at" %}selected{% endif %}>Yayın tarihi</option>
+    <option value="title" {% if listing.sort == "title" %}selected{% endif %}>Başlık</option>
+    <option value="status" {% if listing.sort == "status" %}selected{% endif %}>Durum</option>
+  </select></label>
+  <select name="direction" aria-label="Sıralama yönü"><option value="desc" {% if listing.direction == "desc" %}selected{% endif %}>Azalan</option><option value="asc" {% if listing.direction == "asc" %}selected{% endif %}>Artan</option></select>
+  <select name="per_page" aria-label="Sayfa boyutu">{% for size in (20, 50, 100) %}<option value="{{ size }}" {% if listing.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select>
+  <button type="submit">Uygula</button>
+</form>
+{% if listing.items %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Başlık</th><th>Durum</th><th>Hedef</th><th>Oluşturan</th><th>Oluşturulma</th><th>Yayın</th><th></th></tr></thead>
+  <tbody>{% for item in listing.items %}<tr>
+    <td>{{ item.title }}</td><td><span class="badge">{{ item.status_label }}</span></td>
+    <td>{{ item.audience_label }}</td><td>{{ item.creator_name }}</td>
+    <td>{{ item.created_at|datetime_tr }}</td><td>{{ item.published_at|datetime_tr if item.published_at else "—" }}</td>
+    <td><a href="{{ url_for('organization.announcement_detail', announcement_id=item.id) }}">Detay</a></td>
+  </tr>{% endfor %}</tbody>
+</table></div>
+{% if listing.pages > 1 %}<nav class="pagination" aria-label="Sayfalar">
+  {% for number in range(1, listing.pages + 1) %}
+  <a {% if number == listing.page %}aria-current="page"{% endif %} href="{{ url_for('organization.announcements', q=listing.search, status=listing.status_filter, audience=listing.audience_filter, sort=listing.sort, direction=listing.direction, per_page=listing.per_page, page=number) }}">{{ number }}</a>
+  {% endfor %}
+</nav>{% endif %}
+{% else %}<div class="empty-state"><h2>Duyuru bulunamadı</h2><p>Filtreleri temizleyebilir veya yeni bir duyuru oluşturabilirsiniz.</p></div>{% endif %}
+{% endblock %}

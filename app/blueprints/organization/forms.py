@@ -9,6 +9,7 @@ from wtforms import (
     HiddenField,
     PasswordField,
     SelectField,
+    SelectMultipleField,
     StringField,
     TextAreaField,
 )
@@ -239,3 +240,43 @@ class ImportPackageForm(FlaskForm):  # type: ignore[misc]
 class ImportConfirmForm(FlaskForm):  # type: ignore[misc]
     staging_token = HiddenField(validators=[InputRequired()])
     fingerprint = HiddenField(validators=[InputRequired(), Length(min=64, max=64)])
+
+
+class AnnouncementForm(FlaskForm):  # type: ignore[misc]
+    title = StringField(
+        "Başlık", validators=[InputRequired(), Length(max=160)]
+    )
+    body = TextAreaField(
+        "Duyuru metni", validators=[InputRequired(), Length(max=10_000)]
+    )
+    audience_scope = SelectField(
+        "Hedef",
+        choices=[
+            ("organization", "Tüm organization"),
+            ("buildings", "Seçili binalar"),
+        ],
+        validators=[InputRequired()],
+    )
+    building_ids = SelectMultipleField("Binalar", validators=[Optional()])
+    publication_mode = SelectField(
+        "Yayınlama",
+        choices=[
+            ("draft", "Taslak kaydet"),
+            ("now", "Hemen yayınla"),
+            ("future", "İleri tarihli yayın"),
+        ],
+        validators=[InputRequired()],
+    )
+    published_at = DateTimeLocalField(
+        "Yayın zamanı",
+        validators=[Optional()],
+        format="%Y-%m-%dT%H:%M",
+    )
+    expires_at = DateTimeLocalField(
+        "Son görünme zamanı",
+        validators=[Optional()],
+        format="%Y-%m-%dT%H:%M",
+    )
+
+    def set_building_choices(self, choices: list[tuple[str, str]]) -> None:
+        self.building_ids.choices = choices

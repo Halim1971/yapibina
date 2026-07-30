@@ -6,6 +6,8 @@ from sqlalchemy import ForeignKeyConstraint, UniqueConstraint
 from app.extensions import db
 
 EXPECTED_TABLES = {
+    "announcement_buildings",
+    "announcements",
     "users",
     "organizations",
     "organization_brandings",

@@ -1,8 +1,11 @@
 from app.imports.models import ExternalRecordMap, ImportRun, ImportRunStatus
+from app.models.announcement import Announcement, AnnouncementBuilding
 from app.models.apartment import Apartment, ApartmentMembership
 from app.models.building import Building, BuildingMembership
 from app.models.domain import OrganizationDomain
 from app.models.enums import (
+    AnnouncementAudienceScope,
+    AnnouncementStatus,
     ApartmentMembershipRole,
     BuildingMembershipRole,
     ChargeBatchStatus,
@@ -25,6 +28,10 @@ __all__ = [
     "Apartment",
     "ApartmentMembership",
     "ApartmentMembershipRole",
+    "Announcement",
+    "AnnouncementAudienceScope",
+    "AnnouncementBuilding",
+    "AnnouncementStatus",
     "Building",
     "BuildingMembership",
     "BuildingMembershipRole",

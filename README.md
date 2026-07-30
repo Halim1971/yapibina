@@ -46,6 +46,10 @@ Bu sürüm profesyonel Flask temeli ve tenant çekirdek veri modelini içerir:
 - Tenant-scoped aidat posting, ödeme mahsup, bakiye ve reversal servisleri
 - Tenant hostname’e göre marka adı, logo, renk ve destek bilgisi sağlayan
   white-label branding temeli
+- Organization admin için organization veya aktif bina hedefli taslak,
+  planlı yayın ve arşiv yaşam döngüsüne sahip duyuru yönetimi
+- Resident için aktif daire üyeliklerine göre tenant-safe, salt-okunur duyuru
+  listesi ve detay görünümü
 - Pytest, Ruff ve mypy yapılandırması
 
 ## Gereksinimler
@@ -355,7 +359,8 @@ Yeni özellik geliştirirken aşağıdaki kontrol listesi uygulanır:
 - “İleride mobil gerekir” gerekçesiyle gereksiz endpoint eklenmez.
 - Açıkça istenmedikçe JSON API geliştirilmez.
 
-Announcement kalıcı yönetim içeriği, Notification kullanıcıya özgü
-teslim/okunma kaydı, push ise ayrı ve başarısızlığı ana işlemi geri almayan
-teslim altyapısı olarak ele alınacaktır. Bu modeller, outbox/background job
-mekanizması ve device token yönetimi henüz uygulanmamıştır.
+Announcement kalıcı yönetim içeriğidir ve organization/bina hedefli web
+görünümleri uygulanmıştır. Notification kullanıcıya özgü teslim/okunma kaydı,
+push ise ayrı ve başarısızlığı ana işlemi geri almayan teslim altyapısı olarak
+ele alınacaktır. Notification, outbox/background job ve device token yönetimi
+henüz uygulanmamıştır.

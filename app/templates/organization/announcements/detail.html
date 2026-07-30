@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav with context %}
+{% block title %}{{ announcement.title }}{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">Duyuru</p><h1>{{ announcement.title }}</h1><span class="badge">{{ announcement.status_label }}</span></div><a href="{{ url_for('organization.announcements') }}">Duyurulara Dön</a></section>
+<article class="detail-card">
+  <dl class="detail-grid">
+    <div><dt>Hedef</dt><dd>{{ announcement.audience_label }}</dd></div>
+    <div><dt>Oluşturan</dt><dd>{{ announcement.creator_name }}</dd></div>
+    <div><dt>Oluşturulma</dt><dd>{{ announcement.created_at|datetime_tr }}</dd></div>
+    <div><dt>Yayın</dt><dd>{{ announcement.published_at|datetime_tr if announcement.published_at else "—" }}</dd></div>
+    <div><dt>Son görünme</dt><dd>{{ announcement.expires_at|datetime_tr if announcement.expires_at else "—" }}</dd></div>
+    <div><dt>Güncellenme</dt><dd>{{ announcement.updated_at|datetime_tr }}</dd></div>
+  </dl>
+  {% if announcement.target_buildings %}<p><strong>Seçili binalar:</strong> {{ announcement.target_buildings|map(attribute=1)|join(", ") }}</p>{% endif %}
+  <div class="announcement-body">{{ announcement.body }}</div>
+</article>
+<div class="actions">
+  {% if announcement.can_edit %}<a class="button button-secondary" href="{{ url_for('organization.announcement_edit', announcement_id=announcement.id) }}">Düzenle</a>{% endif %}
+  {% if announcement.can_publish %}<form method="post" action="{{ url_for('organization.announcement_publish', announcement_id=announcement.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button type="submit">Yayınla</button></form>{% endif %}
+  {% if announcement.can_archive %}<form method="post" action="{{ url_for('organization.announcement_archive', announcement_id=announcement.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="button-secondary" type="submit">Arşivle</button></form>{% endif %}
+</div>
+{% endblock %}

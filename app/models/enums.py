@@ -78,3 +78,14 @@ class PaymentMethod(StringEnum):
 class PaymentStatus(StringEnum):
     POSTED = "posted"
     REVERSED = "reversed"
+
+
+class AnnouncementStatus(StringEnum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+class AnnouncementAudienceScope(StringEnum):
+    ORGANIZATION = "organization"
+    BUILDINGS = "buildings"

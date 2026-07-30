@@ -56,3 +56,7 @@ Bu proje Semantic Versioning yaklaşımını izleyecektir.
   branding; organization admin marka ayarları ve güvenli logo yükleme akışı
 - Organization branding alanlarını genişleten Alembic migration’ı ve doğrulanmış
   PNG/JPEG/WebP içeriği için sınırlı Pillow bağımlılığı
+- Tenant-local Announcement ve bina hedef association modelleri; taslak,
+  yayınlanmış/planlı ve arşivlenmiş durum geçişleri
+- Organization admin duyuru yönetimi ile aktif üyelik/bina hedeflerine göre
+  tenant-safe resident duyuru listesi ve detay ekranları

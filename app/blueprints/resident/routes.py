@@ -10,6 +10,10 @@ from app.auth.decorators import resident_required
 from app.blueprints.resident import resident_blueprint
 from app.extensions import db
 from app.services import EntityNotFoundError
+from app.services.resident_announcements import (
+    get_resident_announcement,
+    list_resident_announcements,
+)
 from app.services.resident_finances import (
     format_try,
     get_resident_account_statement,
@@ -132,4 +136,36 @@ def transactions() -> Any:
             apartment_id=request.args.get("apartment_id"),
             page=request.args.get("page"),
         )
+    )
+
+
+@resident_blueprint.get("/resident/announcements")
+@resident_required
+def announcements() -> str:
+    listing = list_resident_announcements(
+        db.session,
+        organization_id=_organization_id(),
+        user_id=current_user.id,
+        page=_page(),
+        per_page=request.args.get("per_page", 20, type=int) or 20,
+    )
+    return render_template(
+        "resident/announcements/index.html", listing=listing
+    )
+
+
+@resident_blueprint.get("/resident/announcements/<uuid:announcement_id>")
+@resident_required
+def announcement_detail(announcement_id: uuid.UUID) -> str:
+    try:
+        announcement = get_resident_announcement(
+            db.session,
+            organization_id=_organization_id(),
+            user_id=current_user.id,
+            announcement_id=announcement_id,
+        )
+    except EntityNotFoundError:
+        abort(404)
+    return render_template(
+        "resident/announcements/detail.html", announcement=announcement
     )

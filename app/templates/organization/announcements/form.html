@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "components/nav.html" import organization_nav with context %}
+{% block title %}{{ title }}{% endblock %}
+{% block navigation %}{{ organization_nav() }}{% endblock %}
+{% block content %}
+<section class="page-header"><div><p class="eyebrow">Duyurular</p><h1>{{ title }}</h1></div><a href="{{ url_for('organization.announcements') }}">Duyurulara Dön</a></section>
+<form method="post" action="{{ submit_url }}" class="form-card">
+  {{ form.hidden_tag() }}
+  {% for error in form.form_errors %}<p class="alert">{{ error }}</p>{% endfor %}
+  <label>{{ form.title.label }}{{ form.title() }}{% for error in form.title.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+  <label>{{ form.body.label }}{{ form.body(rows=10) }}{% for error in form.body.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+  <label>{{ form.audience_scope.label }}{{ form.audience_scope() }}</label>
+  <label>{{ form.building_ids.label }}{{ form.building_ids(size=6) }}<small>Yalnız “Seçili binalar” hedefinde kullanılır.</small></label>
+  <label>{{ form.publication_mode.label }}{{ form.publication_mode() }}</label>
+  <label>{{ form.published_at.label }}{{ form.published_at() }}{% for error in form.published_at.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
+  <label>{{ form.expires_at.label }}{{ form.expires_at() }}</label>
+  <button type="submit">Kaydet</button>
+</form>
+{% endblock %}

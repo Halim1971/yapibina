@@ -189,8 +189,9 @@ Web ve API aynı policy fonksiyonlarını kullanır.
 ### 8.3 Announcement, Notification ve push sınırları
 
 `Announcement`, yönetici tarafından oluşturulan kalıcı içeriktir. Tenant
-scope'u zorunludur; organization geneli, building veya açıkça seçilmiş
-kullanıcılar hedeflenebilir. Aynı içerik web ve mobilde okunur.
+scope'u zorunludur; mevcut sürümde organization geneli veya birden fazla aktif
+building hedeflenebilir. Tek kullanıcı/apartment hedefleme yoktur. Aynı typed
+service sözleşmesi gelecekte web ve mobil tarafından kullanılabilir.
 
 `Notification`, belirli bir kullanıcıya ait uygulama içi teslim/okunma
 kaydıdır. Tür, başlık, kısa içerik, hedef kaynak türü/UUID'si, oluşturulma,
@@ -207,8 +208,15 @@ fiziksel uygulama kurulumu bazında tutulur; provider/platform, son görülme,
 iptal/geçersizleşme zamanı desteklenir. Logout, provider invalid-token cevabı
 ve kullanıcı talebi token'ı devre dışı bırakabilir.
 
-Bu aşamada Announcement, Notification, DeviceToken veya Outbox modeli;
-migration, worker, push provider, JSON API ve mobil istemci uygulanmamıştır.
+Bu aşamada Announcement modeli, organization yönetimi ve resident salt-okunur
+web görünümü uygulanmıştır. Notification, DeviceToken veya Outbox modeli;
+worker, push provider, JSON API ve mobil istemci uygulanmamıştır.
+
+Announcement `draft → published → archived` veya `draft → archived` yaşam
+döngüsünü kullanır. Gelecek tarihli `published_at`, planlı sunum durumudur;
+yayın zamanı gelene kadar içeriği/hedefi değiştirilebilir fakat kayıt
+`published` kalır ve taslağa geri dönmez. Announcement tenant-local veridir;
+standart veri importer’ı bu kayıtları oluşturmaz, değiştirmez veya silmez.
 
 ## 9. Finansal ledger
 
@@ -281,7 +289,11 @@ MVP:
 
 ## 13. Bildirim mimarisi
 
-MVP'de duyuru uygulama içinde gösterilir ve okunma bilgisi saklanır. Duyuru yayınlama service'i, ileride bir `NotificationDispatcher` portuna domain olayı verebilir. Web Push, e-posta veya başka kanal adapter'ları daha sonra eklenir. Bildirim teslim durumu duyurunun yayınlanmış olmasının doğruluk kaynağı değildir; tekrar deneme ve idempotency ayrı ele alınır.
+MVP'de duyuru uygulama içinde gösterilir; kullanıcı bazlı okunma bilgisi
+saklanmaz. Duyuru yayınlama service'i ileride bir `NotificationDispatcher`
+portuna domain olayı verebilir. Web Push, e-posta veya başka kanal adapter'ları
+daha sonra eklenir. Bildirim teslim durumu duyurunun yayınlanmış olmasının
+doğruluk kaynağı değildir; tekrar deneme ve idempotency ayrı ele alınır.
 
 ## 14. Audit yaklaşımı
 

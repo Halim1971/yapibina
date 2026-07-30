@@ -243,6 +243,18 @@ td {
   background: var(--color-surface);
 }
 
+.announcement-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.announcement-body {
+  margin-top: 1rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.65;
+}
+
 .import-summary {
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
 }

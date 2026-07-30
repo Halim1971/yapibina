@@ -786,6 +786,31 @@ Bu belge Architecture Decision Record (ADR) özeti olarak yaşatılmalıdır. Ka
   read-model’dir. Gelecekte web ve mobil API aynı servisi kullanacaktır; bu karar
   henüz JSON endpoint veya mobil asset manifesti oluşturmaz.
 
+## D-075 — Announcement tenant-local içeriktir, teslim kaydı değildir
+
+- **Karar:** Announcement Yapıbina içinde organization’a ait yerel içeriktir;
+  importer oluşturmaz, güncellemez veya silmez. Hedef `organization` ya da aynı
+  tenant’taki bir veya daha fazla aktif building olabilir. Apartment veya tek
+  kullanıcı hedefleme bu aşamada yoktur.
+- **Yaşam döngüsü:** `draft → published → archived` ve `draft → archived`
+  geçişleri desteklenir. Gelecek tarihli yayın ayrı bir status değildir;
+  `published` ile gelecekteki timezone-aware `published_at` birlikte planlı
+  sunumu üretir. Published içerik değiştirilemez; gelecekteki planlı içerik
+  yayın anına kadar düzenlenebilir ancak düzenleme sonrasında da `published`
+  kalır ve `draft` durumuna geri dönemez. Archived durum terminaldir. Aynı
+  publish veya archive isteği idempotenttir.
+- **Resident görünürlüğü:** Published, yayın zamanı gelmiş ve süresi dolmamış
+  organization duyuruları aktif organization member’a görünür. Bina hedefli
+  duyuru için ayrıca aktif ApartmentMembership, aktif Apartment ve aktif
+  Building zincirinden en az bir hedef eşleşmesi gerekir. Birden fazla eşleşme
+  aynı duyuruyu çoğaltmaz.
+- **Sınır:** Announcement body plain text’tir ve template autoescape ile
+  gösterilir. Notification/read receipt, push, e-posta, SMS, WhatsApp,
+  attachment, rich text, background worker ve JSON API uygulanmamıştır.
+- **İstemci bağımsızlığı:** Organization ve resident servisleri Flask/Jinja
+  nesnelerinden bağımsız typed read-model üretir; gelecekte web ve mobil aynı
+  application service kurallarını kullanır.
+
 ## Kodlamadan önce kalan kararlar
 
 Aşağıdakiler uygulanmadan önce sahip ve tarih atanarak karara bağlanmalıdır:
