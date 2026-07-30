@@ -221,7 +221,13 @@ def get_dues_dashboard(
             Apartment.building_id == building.id,
             Apartment.is_active.is_(True),
         )
-        .order_by(Apartment.block, Apartment.floor, Apartment.unit_code, Apartment.id)
+        .order_by(
+            Apartment.block,
+            Apartment.floor,
+            func.length(func.coalesce(Apartment.unit_code, Apartment.number)),
+            func.coalesce(Apartment.unit_code, Apartment.number),
+            Apartment.id,
+        )
     ).all()
     charge_map, paid_map = _period_financial_maps(
         session,

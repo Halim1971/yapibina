@@ -8,7 +8,12 @@
     <header class="resident-page-header"><p class="eyebrow">Bağımsız bölümünüzün finansal özeti</p><h1>Aidat Ekstresi</h1></header>
     <div class="empty-state resident-empty-state"><span class="empty-icon" aria-hidden="true">⌂</span><div><h2>Aktif bağımsız bölüm bağlantısı bulunmuyor</h2><p>Aidat bilgilerinizi görüntüleyebilmek için yönetiminizle iletişime geçin.</p></div></div>
   {% else %}
-    <header class="resident-page-header"><div><p class="eyebrow">Bağımsız Bölüm {{ selected.apartment_label }}</p><h1>{{ selected.building_name }} Aidat Ekstresi</h1><p class="page-intro">Son altı aya ait tahakkuk, ödeme ve kalan borç özetiniz.</p></div></header>
+    <header class="resident-page-header resident-statement-title">
+      <h1>{{ selected.building_name }}</h1>
+      <p class="apartment-title">Bağımsız Bölüm {{ selected.apartment_label }}</p>
+      <h2>Aidat Ekstresi</h2>
+      <p class="page-intro">Son altı aya ait tahakkuk, ödeme ve kalan borç özetiniz.</p>
+    </header>
     {% if apartments|length > 1 %}
       <form method="get" class="resident-apartment-picker">
         <label for="apartment_id">Bağımsız bölüm seçin</label>

@@ -250,9 +250,9 @@ class AnnouncementForm(FlaskForm):  # type: ignore[misc]
         "Duyuru metni", validators=[InputRequired(), Length(max=10_000)]
     )
     audience_scope = SelectField(
-        "Hedef",
+        "Yayın kapsamı",
         choices=[
-            ("organization", "Tüm organization"),
+            ("organization", "Tüm binalar"),
             ("buildings", "Seçili binalar"),
         ],
         validators=[InputRequired()],

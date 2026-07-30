@@ -47,6 +47,7 @@ class AnnouncementListItem:
     audience_scope: AnnouncementAudienceScope
     audience_label: str
     target_building_count: int
+    target_buildings: tuple[str, ...]
     creator_name: str
     created_at: datetime
     published_at: datetime | None
@@ -63,6 +64,7 @@ class AnnouncementPage:
     search: str
     status_filter: str
     audience_filter: str
+    building_id: uuid.UUID | None
     sort: str
     direction: str
 
@@ -556,6 +558,7 @@ def list_organization_announcements(
     search: str = "",
     status_filter: str = "",
     audience_filter: str = "",
+    building_id: uuid.UUID | None = None,
     sort: str = "created_at",
     direction: str = "desc",
     page: int = 1,
@@ -587,6 +590,15 @@ def list_organization_announcements(
         conditions.append(
             Announcement.audience_scope == AnnouncementAudienceScope(audience_filter)
         )
+    if building_id is not None:
+        conditions.append(
+            Announcement.building_targets.any(
+                and_(
+                    AnnouncementBuilding.organization_id == organization_id,
+                    AnnouncementBuilding.building_id == building_id,
+                )
+            )
+        )
     total = int(
         session.scalar(select(func.count(Announcement.id)).where(*conditions)) or 0
     )
@@ -605,7 +617,9 @@ def list_organization_announcements(
             select(Announcement)
             .options(
                 selectinload(Announcement.creator),
-                selectinload(Announcement.building_targets),
+                selectinload(Announcement.building_targets).selectinload(
+                    AnnouncementBuilding.building
+                ),
             )
             .where(*conditions)
             .order_by(ordering, Announcement.id.asc())
@@ -624,6 +638,16 @@ def list_organization_announcements(
                 audience_scope=item.audience_scope,
                 audience_label=_audience_label(item),
                 target_building_count=len(item.building_targets),
+                target_buildings=tuple(
+                    target.building.name
+                    for target in sorted(
+                        item.building_targets,
+                        key=lambda target: (
+                            target.building.name.casefold(),
+                            target.building.id,
+                        ),
+                    )
+                ),
                 creator_name=_creator_name(item.creator),
                 created_at=as_utc(item.created_at),
                 published_at=(
@@ -640,6 +664,7 @@ def list_organization_announcements(
         search=search,
         status_filter=status_filter,
         audience_filter=audience_filter,
+        building_id=building_id,
         sort=sort,
         direction=direction,
     )

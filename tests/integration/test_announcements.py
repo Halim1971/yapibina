@@ -732,6 +732,23 @@ def test_organization_create_route_validates_targets_and_csrf(
         },
     )
     assert created.status_code == 302
+    listing = client.get(
+        f"/organization/announcements?building_id={first.id}",
+        headers={"Host": HOST},
+    )
+    assert listing.status_code == 200
+    assert "Güvenli Duyuru".encode() in listing.data
+    assert first.name.encode() in listing.data
+    assert b">Bina<" in listing.data
+    assert b">Hedef<" not in listing.data
+    assert b">Arama<" not in listing.data
+    assert (
+        client.get(
+            f"/organization/announcements?building_id={hidden.id}",
+            headers={"Host": HOST},
+        ).status_code
+        == 404
+    )
 
 
 def test_organization_mutation_routes_cover_edit_publish_archive_and_idor(

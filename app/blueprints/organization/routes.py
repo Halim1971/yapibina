@@ -776,18 +776,10 @@ def dues() -> Any:
         year=year,
         month=month,
     )
-    batch_form = ChargeBatchCreateForm()
-    batch_form.set_choices(choices, today.year)
-    if selected:
-        batch_form.building_id.data = str(selected.id)
-    batch_form.period_year.data = year
-    batch_form.period_month.data = month
-    batch_form.title.data = f"{month:02d}/{year} Aidatı"
     return render_template(
         "organization/dues/index.html",
         dashboard=dashboard,
         period_form=period_form,
-        batch_form=batch_form,
     )
 
 

@@ -223,7 +223,8 @@ def test_dashboard_access_and_empty_state(client: FlaskClient) -> None:
     assert response.status_code == 200
     assert "Genel Bakış".encode() in response.data
     assert b"Binalar" in response.data
-    assert b"Aidat ve \xc3\x96demeler" in response.data
+    assert b"Aidatlar" in response.data
+    assert b"Veri \xc4\xb0\xc3\xa7e Aktarma" not in response.data
     assert b"Toplam bina" not in response.data
     assert b"Son finansal hareketler" not in response.data
 

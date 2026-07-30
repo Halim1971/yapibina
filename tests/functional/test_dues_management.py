@@ -554,13 +554,28 @@ def test_suspended_organization_and_platform_admin_do_not_gain_access(
 
 
 def test_default_period_and_navigation_are_visible(client: FlaskClient) -> None:
-    _, admin, _, _ = _seed_admin()
+    organization, admin, building, first = _seed_admin()
+    first.number = "1"
+    first.unit_code = "1"
+    for number in range(2, 11):
+        _apartment(organization, building, str(number))
+    db.session.commit()
     _login(client, admin.email)
     response = client.get("/organization/dues", headers={"Host": HOST})
     assert response.status_code == 200
-    assert "Aidat ve Ödemeler".encode() in response.data
-    assert f"{date.today().month:02d}/{date.today().year} Aidatı".encode() in response.data
+    assert b"Aidatlar" in response.data
     assert b"dues-row" in response.data
+    assert b"create-dues" not in response.data
+    assert (
+        "Tüm aktif bağımsız bölümlere uygula".encode()
+        not in response.data
+    )
+    assert b"\xc3\x96deme gir" not in response.data
+    labels = [
+        response.data.index(f"<strong>{number}</strong>".encode())
+        for number in range(1, 11)
+    ]
+    assert labels == sorted(labels)
 
 
 def test_auto_allocation_locking_path_is_used(monkeypatch: pytest.MonkeyPatch) -> None:

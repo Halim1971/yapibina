@@ -3,8 +3,9 @@
 {% block title %}{{ title }}{% endblock %}
 {% block navigation %}{{ organization_nav() }}{% endblock %}
 {% block content %}
-<section class="page-header"><div><p class="eyebrow">Duyurular</p><h1>{{ title }}</h1></div><a href="{{ url_for('organization.announcements') }}">Duyurulara Dön</a></section>
-<form method="post" action="{{ submit_url }}" class="form-card">
+<section class="panel wide announcement-form-page">
+<header class="page-header"><div><p class="eyebrow">Duyurular</p><h1>{{ title }}</h1></div><a href="{{ url_for('organization.announcements') }}">Duyurulara Dön</a></header>
+<form method="post" action="{{ submit_url }}" class="form-card announcement-form">
   {{ form.hidden_tag() }}
   {% for error in form.form_errors %}<p class="alert">{{ error }}</p>{% endfor %}
   <label>{{ form.title.label }}{{ form.title() }}{% for error in form.title.errors %}<span class="field-error">{{ error }}</span>{% endfor %}</label>
@@ -16,4 +17,5 @@
   <label>{{ form.expires_at.label }}{{ form.expires_at() }}</label>
   <button type="submit">Kaydet</button>
 </form>
+</section>
 {% endblock %}

@@ -88,12 +88,23 @@ def _save_form_error(form: AnnouncementForm, action: Any) -> bool:
 @organization_blueprint.get("/announcements")
 @organization_admin_required
 def announcements() -> str:
+    building_choices = _building_choices()
+    selected_building_id: uuid.UUID | None = None
+    raw_building_id = request.args.get("building_id", "").strip()
+    if raw_building_id:
+        try:
+            selected_building_id = uuid.UUID(raw_building_id)
+        except ValueError:
+            abort(404)
+        if str(selected_building_id) not in {
+            building_id for building_id, _ in building_choices
+        }:
+            abort(404)
     listing = list_organization_announcements(
         db.session,
         organization_id=_organization_id(),
-        search=request.args.get("q", ""),
         status_filter=request.args.get("status", ""),
-        audience_filter=request.args.get("audience", ""),
+        building_id=selected_building_id,
         sort=request.args.get("sort", "created_at"),
         direction=request.args.get("direction", "desc"),
         page=_safe_int("page", 1),
@@ -102,7 +113,9 @@ def announcements() -> str:
         ),
     )
     return render_template(
-        "organization/announcements/index.html", listing=listing
+        "organization/announcements/index.html",
+        listing=listing,
+        building_choices=building_choices,
     )
 
 
