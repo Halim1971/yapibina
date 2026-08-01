@@ -818,6 +818,7 @@ def test_apartment_detail_filters_pagination_and_query_budget() -> None:
 
 
 def test_resident_detail_reuses_apartment_finance_and_supports_placements() -> None:
+    current_month = date.today()
     organization, admin = _scope()
     building = _building(organization, "Resident Detay Binası", "RDT")
     apartment = _apartment(organization, building, "1")
@@ -850,12 +851,12 @@ def test_resident_detail_reuses_apartment_finance_and_supports_placements() -> N
         building_id=building.id,
         apartment_id=apartment.id,
         charge_type=ChargeType.MONTHLY_DUE,
-        title="Temmuz aidatı",
+        title="Güncel ay aidatı",
         description="Resident detayı finansı",
         amount="200.00",
-        due_date=date(2026, 7, 10),
-        period_year=2026,
-        period_month=7,
+        due_date=date(current_month.year, current_month.month, 10),
+        period_year=current_month.year,
+        period_month=current_month.month,
         created_by_user_id=admin.id,
     )
     payment = record_payment(
@@ -864,7 +865,7 @@ def test_resident_detail_reuses_apartment_finance_and_supports_placements() -> N
         building_id=building.id,
         apartment_id=apartment.id,
         amount="125.00",
-        payment_date=date(2026, 7, 12),
+        payment_date=date(current_month.year, current_month.month, 12),
         payment_method=PaymentMethod.BANK_TRANSFER,
         recorded_by_user_id=admin.id,
         reference="RESIDENT-PAYMENT",
@@ -880,7 +881,7 @@ def test_resident_detail_reuses_apartment_finance_and_supports_placements() -> N
         building_id=building.id,
         apartment_id=apartment.id,
         amount="25.00",
-        payment_date=date(2026, 7, 15),
+        payment_date=date(current_month.year, current_month.month, 15),
         payment_method=PaymentMethod.CASH,
         recorded_by_user_id=admin.id,
         description="Kullanılmamış resident ödemesi",

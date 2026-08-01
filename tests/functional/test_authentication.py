@@ -254,6 +254,8 @@ def test_login_get_renders_form(app: Flask, client: FlaskClient) -> None:
     assert b'name="email"' in response.data
     assert b'name="password"' in response.data
     assert b'name="remember_me"' in response.data
+    assert b'src="/static/logo.png"' in response.data
+    assert "Hesabınıza güvenli biçimde giriş yapın.".encode() not in response.data
 
 
 def test_logout_is_post_only_and_revokes_access(

@@ -63,6 +63,25 @@ h2 {
   height: 4rem;
 }
 
+.login-header {
+  display: grid;
+  gap: 1.25rem;
+  justify-items: center;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.login-header h1 {
+  font-weight: 800;
+}
+
+.demo-site-logo {
+  display: block;
+  width: min(100%, 24rem);
+  height: auto;
+  border-radius: 0.65rem;
+}
+
 .site-footer {
   display: flex;
   gap: 1rem;
